@@ -1,7 +1,7 @@
 import numpy as np
 
 # Set path to data
-path_to_data = 'data/mnist_reduced.pkl.gz'
+path_to_data = 'Data/mnist_reduced.pkl.gz'
 
 def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
     '''Returns a function that takes a vector of membrane potentials and returns a vector of 0s and 1s'''
