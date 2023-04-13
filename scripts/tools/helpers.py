@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from tools.parameters_main import *
 
 # Set path to data
@@ -163,20 +164,20 @@ def create_rbm_parameters(wmean=0, b_vmean=0, b_hmean=0):
     ylabel('Neuron index')
     xlim(-0.1, 1.1) """
 
-def load_matrices(date_time):
+def load_matrices(date, time):
     '''Loads the matrices from the output folder.'''
-    folder = str(date_time)[0:10]
+    path = "output/"+date+"/"+time+"/"
     try:
-        W = np.load("output/"+folder+"/W_"+date_time+".dat", allow_pickle=True)
-        Wvh = np.load("output/"+folder+"/Wvh_"+date_time+".dat", allow_pickle=True)
-        Wch = np.load("output/"+folder+"/Wch_"+date_time+".dat", allow_pickle=True)
-        mBv = np.load("output/"+folder+"/mBv_"+date_time+".dat", allow_pickle=True)
-        mBh = np.load("output/"+folder+"/mBh_"+date_time+".dat", allow_pickle=True)
-        b_c = np.load("output/"+folder+"/b_c_"+date_time+".dat", allow_pickle=True)
-        b_v = np.load("output/"+folder+"/b_v_"+date_time+".dat", allow_pickle=True)
-        b_h = np.load("output/"+folder+"/b_h_"+date_time+".dat", allow_pickle=True)
-        mB = np.load("output/"+folder+"/mB_"+date_time+".dat", allow_pickle=True)
-        print("Matrices loaded from output/"+folder+"/")        
+        W = np.load(path+"/W.dat", allow_pickle=True)
+        Wvh = np.load(path+"/Wvh.dat", allow_pickle=True)
+        Wch = np.load(path+"/Wch.dat", allow_pickle=True)
+        mBv = np.load(path+"/mBv.dat", allow_pickle=True)
+        mBh = np.load(path+"/mBh.dat", allow_pickle=True)
+        b_c = np.load(path+"/b_c.dat", allow_pickle=True)
+        b_v = np.load(path+"/b_v.dat", allow_pickle=True)
+        b_h = np.load(path+"/b_h.dat", allow_pickle=True)
+        mB = np.load(path+"/mB.dat", allow_pickle=True)
+        print("Matrices loaded from output/"+path+"/")        
     except:
         print("File not found. Try again.")
         return None, None, None, None, None, None, None, None, None
@@ -223,19 +224,18 @@ def spike_histogram(spike_monitor, t_start, t_stop):
     return np.array(list(zip(*[k,count])))
 
 def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str):
-    mypath = "output/"+date_str
+    mypath = "output/"+date_str+"/"+date_time_str[11:16]
     if not os.path.isdir(mypath):
         os.makedirs(mypath)
 
-    W.dump("output/"+date_str+"/W_"+date_time_str+".dat")
-    Wvh.dump("output/"+date_str+"/Wvh_"+date_time_str+".dat")
-    Wch.dump("output/"+date_str+"/Wch_"+date_time_str+".dat")
-    mBv.dump("output/"+date_str+"/mBv_"+date_time_str+".dat")
-    mBh.dump("output/"+date_str+"/mBh_"+date_time_str+".dat")
-    b_c.dump("output/"+date_str+"/b_c_"+date_time_str+".dat")
-    b_v.dump("output/"+date_str+"/b_v_"+date_time_str+".dat")
-    b_h.dump("output/"+date_str+"/b_h_"+date_time_str+".dat")
-    mB.dump("output/"+date_str+"/mB_"+date_time_str+".dat")
+    W.dump(mypath+"/W.dat")
+    Wvh.dump(mypath+"/Wvh.dat")
+    Wch.dump(mypath+"/Wch.dat")
+    mBv.dump(mypath+"/mBv.dat")
+    mBh.dump(mypath+"/mBh.dat")
+    b_c.dump(mypath+"/b_c.dat")
+    b_v.dump(mypath+"/b_v.dat")
+    b_h.dump(mypath+"/b_h.dat")
+    mB.dump(mypath+"/mB.dat")
 
-    print("Matrices saved to output/"+date_str+"/")
-
+    print("Matrices saved to output/"+mypath)
