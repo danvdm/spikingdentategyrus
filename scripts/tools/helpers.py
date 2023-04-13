@@ -127,6 +127,7 @@ def custom_step(clock_object):
     tmod_now, n_now = clock_object.tmod, clock_object.n
     clock_object.tmod = np.mod(clock_object.tmod+1, clock_object.mod)
     clock_object.n = int(clock_object.t/(clock_object.period))
+    return tmod_now, n_now
 
 def create_bias_vectors(N_v, N_c, N_h):
     '''Creates the bias vectors for the RBM.'''

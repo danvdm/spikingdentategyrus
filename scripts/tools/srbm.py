@@ -15,14 +15,14 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             Cm = cm,
             I_inj = i_inj,
             g = g_leak,
-            sigma = wnsigma,
+            sigma = sigma,
             tau_rec = tau_rec)
-                                               
+
     eqs_h = Equations(eqs_str_lif_wnr, 
             Cm = cm,
             I_inj = i_inj,
             g = g_leak,
-            sigma = wnsigma,
+            sigma = sigma,
             tau_rec = tau_rec)
     
     print("Creating Population")

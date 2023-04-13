@@ -21,12 +21,12 @@ tau_rec = t_ref                         # recovery time constant ?
 theta = .1 * volt  
 cm = 1e-12 * farad                      # membrane capacitance ? 
 beta_fi = 1./cm/theta                   # beta for F-I curve  ??
-sigma = 1.e-9 * amp                     # noise amplitude --> If this is used within the equations, it is faster than with the one below which was originally used
+sigma = 1.e-9 * amp                     # noise amplitude - This is now used in the queation creations instead of wnsigma --> not sure what it originally was for...
 cal_i_lk = 0.0e-10                      # leak current
 g_leak = 1e-9 * siemens                 # leak conductance
 # dt = 0.00005 * second                 # time step --> Not necessary anymore 
 n_samples = t_sim/(dcmt*t_ref)+1        # number of samples
-wnsigma = 1.e-9 * amp # 4.24e-11 * amp  # This the reason why its slow. Originally wnsigma for equations
+wnsigma = 4.24e-11 * amp                # This the reason why its slow. Use sigma instead!!!
 
 t_burn_percent = 10.                    # percentage of burn-in time
 tau_learn = t_ref                       
