@@ -1,4 +1,6 @@
 # Parameters demo: 
+from brian2 import *
+
 n_classes = 10
 N_v = N_inputs =784
 N_c = N_class = 40
@@ -14,7 +16,9 @@ t_ref = 0.004 * second
 T = dcmt*t_ref
 init_delay=dcmt*t_ref
 delay=0*ms
-T1_s = init_delay
+
+# Timepoints for the different phases
+T1_s = init_delay                   
 T1_e = T+init_delay
 T2_s = T+init_delay+delay
 T2_e = 2*T+delay+init_delay
@@ -23,19 +27,19 @@ T3_e = 3*T+2*delay+ init_delay
 
 t_sim = T3_e
 
-t_ref = 0.004 * second
-bias_input_rate = 1000. * Hz # added Hz
+t_ref = 0.004 * second                      # refractory period ??
+bias_input_rate = 1000. * Hz # added Hz     # input rate ??
 beta = 2.04371561e+09
 gamma = np.exp(9.08343441e+00) * Hz # added Hz
 tau_noise = .001 * second
 tau_rec = t_ref
 theta = .1 * volt
-cm = 1e-12 * farad
+cm = 1e-12 * farad                          # membrane capacitance ??
 beta_fi = 1./cm/theta
 sigma = 1.e-9 * amp
-cal_i_lk = 0.0e-10
-g_leak = 1e-9 * siemens
-dt = 0.00005
+cal_i_lk = 0.0e-10                          # leak current ??
+g_leak = 1e-9 * siemens                     # leak conductance ??
+# dt = 0.00005
 n_samples = t_sim/(dcmt*t_ref)+1
 wnsigma = 4.24e-11
 
@@ -56,7 +60,6 @@ i_inj = (- np.log(float(gamma))
          )/beta * amp
 
 sigm = lambda x: 1./(1+exp(-x))
-#helper parameters
 
 Bu = 3.2 * Hz
 wb = 12.5

@@ -1,5 +1,5 @@
 import numpy as np
-from tools.parameters import *
+from tools.parameters_main import *
 
 # Set path to data
 path_to_data = 'data/mnist_reduced.pkl.gz'
@@ -182,3 +182,60 @@ def load_matrices(date_time):
         return None, None, None, None, None, None, None, None, None
 
     return W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB
+
+def create_single_Id(idx, data, min_p = 1e-16, max_p = .9999, seed = None, mult_class=0.0, mult_data=1.0):
+    
+    iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = data
+    Idp = np.ones([N_v+N_c])*min_p
+    i = np.nonzero(iv_l_seq==idx)[0][0]
+    cl = np.zeros(N_c)
+    cl[int(iv_l_seq[i]*n_c_unit):int((iv_l_seq[i]+1)*n_c_unit)] = max_p
+    Idp[N_v:] = clamped_input_transform(cl, min_p = min_p, max_p = max_p)*mult_class
+    Idp[:N_v] = clamped_input_transform(iv_seq[i,:], min_p = min_p, max_p = max_p)*mult_data
+    Id = (Idp /beta)
+    return Id
+
+def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
+    def func(V):
+        return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta*g_leak+np.log(gamma))*float(dt)))
+    return func
+
+         
+def custom_step(clock_object):
+    tmod_now, n_now = clock_object.tmod, clock_object.n
+    clock_object.tmod = np.mod(clock_object.tmod+1, clock_object.mod)
+    clock_object.n = int(clock_object.t/(clock_object.period))
+    return tmod_now, n_now
+
+def spike_histogram(spike_monitor, t_start, t_stop):
+    '''
+    Returns firing rate of spike_monitor between t_start and t_stop
+    '''
+    import numpy as np
+    delta_t = t_stop - t_start
+    k, v = zip(*spike_monitor.spike_trains().items())   
+    def f(s):
+        idx_low = s >= t_start
+        idx_high = s < t_stop
+        idx = idx_low * idx_high
+        return np.sum(idx)
+    count = np.array(list(map(f, v)), dtype='float')/delta_t
+    return np.array(list(zip(*[k,count])))
+
+def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str):
+    mypath = "output/"+date_str
+    if not os.path.isdir(mypath):
+        os.makedirs(mypath)
+
+    W.dump("output/"+date_str+"/W_"+date_time_str+".dat")
+    Wvh.dump("output/"+date_str+"/Wvh_"+date_time_str+".dat")
+    Wch.dump("output/"+date_str+"/Wch_"+date_time_str+".dat")
+    mBv.dump("output/"+date_str+"/mBv_"+date_time_str+".dat")
+    mBh.dump("output/"+date_str+"/mBh_"+date_time_str+".dat")
+    b_c.dump("output/"+date_str+"/b_c_"+date_time_str+".dat")
+    b_v.dump("output/"+date_str+"/b_v_"+date_time_str+".dat")
+    b_h.dump("output/"+date_str+"/b_h_"+date_time_str+".dat")
+    mB.dump("output/"+date_str+"/mB_"+date_time_str+".dat")
+
+    print("Matrices saved to output/"+date_str+"/")
+

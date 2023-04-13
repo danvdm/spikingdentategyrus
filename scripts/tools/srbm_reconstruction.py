@@ -1,5 +1,6 @@
 from brian2 import *
 from tools.helpers import *
+from tools.parameters_reconstruction import *
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,14 +28,14 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
             Cm = 1e-12*farad,
             I_inj = i_inj,
             g = g_leak,
-            sigma = sigma,
+            sigma = sigma,                      # This was set to wnsigma in the original code
             tau_rec = tau_rec)
                                                
     eqs_h = Equations(eqs_str_lif_wnr, 
             Cm = 1e-12*farad,
             I_inj = i_inj,
             g = g_leak,
-            sigma = sigma,
+            sigma = sigma,                      # This was set to wnsigma in the original code
             tau_rec = tau_rec)
 
     eqs_v_helper = Equations(eqs_str_lif_wnr, 
