@@ -100,7 +100,7 @@ def create_Id(data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
     return Id
 
 def classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit, n_classes = 10):
-    '''Classifies the label based on the free energy of the model given the test data.'''
+    '''Calculates the classification free energy for the test data.'''
     numcases = len(test_labels);
     F = np.zeros([int(numcases), int(n_classes)]);
     for i in range(n_classes):
@@ -163,3 +163,22 @@ def create_rbm_parameters(wmean=0, b_vmean=0, b_hmean=0):
     ylabel('Neuron index')
     xlim(-0.1, 1.1) """
 
+def load_matrices(date_time):
+    '''Loads the matrices from the output folder.'''
+    folder = str(date_time)[0:10]
+    try:
+        W = np.load("output/"+folder+"/W_"+date_time+".dat", allow_pickle=True)
+        Wvh = np.load("output/"+folder+"/Wvh_"+date_time+".dat", allow_pickle=True)
+        Wch = np.load("output/"+folder+"/Wch_"+date_time+".dat", allow_pickle=True)
+        mBv = np.load("output/"+folder+"/mBv_"+date_time+".dat", allow_pickle=True)
+        mBh = np.load("output/"+folder+"/mBh_"+date_time+".dat", allow_pickle=True)
+        b_c = np.load("output/"+folder+"/b_c_"+date_time+".dat", allow_pickle=True)
+        b_v = np.load("output/"+folder+"/b_v_"+date_time+".dat", allow_pickle=True)
+        b_h = np.load("output/"+folder+"/b_h_"+date_time+".dat", allow_pickle=True)
+        mB = np.load("output/"+folder+"/mB_"+date_time+".dat", allow_pickle=True)
+        print("Matrices loaded from output/"+folder+"/")        
+    except:
+        print("File not found. Try again.")
+        return None, None, None, None, None, None, None, None, None
+
+    return W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB
