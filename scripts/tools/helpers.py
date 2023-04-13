@@ -1,4 +1,5 @@
 import numpy as np
+from tools.parameters import *
 
 # Set path to data
 path_to_data = 'data/mnist_reduced.pkl.gz'
@@ -37,8 +38,6 @@ def select_equal_n_labels(n, data, labels, classes = None, seed=None):
     return iv_seq, iv_l_seq   
 
 def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, datafile = path_to_data, num_classes = range(10)):
-    '''Loads the MNIST data and returns the input vector sequence, the input vector label sequence, 
-       the training input vector, the training input vector labels, the test input vector, and the test input vector labels.'''
     import gzip, pickle
     mat = pickle.load(gzip.open(datafile, 'r'), encoding='latin1')
 
@@ -54,9 +53,8 @@ def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None
     
     return iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l
 
-def load_mnist_data(n_samples, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
-    '''Loads the MNIST data and returns the input vector sequence, the input vector label sequence, the training input 
-       vector, the training input vector labels, the test input vector, and the test input vector labels.'''
+def load_mnist_data(min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
+    #------------------------------------------ Create Input Vector
     mnist_data = load_MNIST(n_samples,
                             min_p = min_p,
                             max_p = max_p,
@@ -86,7 +84,7 @@ def create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = .00001, max_p = .95
 
     return Id
 
-def create_Id(n_samples, N_v, N_c, n_c_unit, beta, data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
+def create_Id(data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
     '''Creates the input vector sequence with the clamped input. If data is True, then the MNIST data is loaded. 
        If data is a tuple, then the data is used. If data is False, then the input vector sequence is all zeros.'''
     if hasattr(data, '__len__'):
@@ -141,7 +139,7 @@ def create_weight_matrix(N_v, N_h, N_c, sigma = 0.1):
     '''Creates the weight matrix for the RBM.'''
     return np.random.normal(0, sigma, size=(N_v+N_c, N_h))
 
-def create_rbm_parameters(N_v, N_c, N_h, wmean=0, b_vmean=0, b_hmean=0):
+def create_rbm_parameters(wmean=0, b_vmean=0, b_hmean=0):
     '''Creates the RBM parameters.'''
     #------------------------------------------ Bias and weights
     b_v, b_c, b_h = create_bias_vectors(N_v, N_c, N_h)
