@@ -11,7 +11,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     #------------------------------------------ Neuron Groups
     print("Creating equation")
     
-    eqs_v = Equations(eqs_str_lif_wnrd, 
+    """ eqs_v = Equations(eqs_str_lif_wnrd, 
             Cm = cm,
             I_inj = i_inj,
             g = g_leak,
@@ -23,12 +23,12 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             I_inj = i_inj,
             g = g_leak,
             sigma = sigma,
-            tau_rec = tau_rec)
+            tau_rec = tau_rec) """
     
     print("Creating Population")
     neuron_group_rvisible = NeuronGroup(\
             N_v+N_c,
-            model = eqs_v,
+            model = eqs_str_lif_wnrd, # changed from eqs_v to eqs_str_lif_wnrd
             threshold = 'v>theta',  # removed *volt
             refractory = t_ref,
             reset = "v = 0*volt"    # changed to string
@@ -36,7 +36,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     
     neuron_group_rhidden = NeuronGroup(\
             N_h,
-            model = eqs_h,
+            model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
             threshold = 'v>theta',  # removed *volt
             refractory = t_ref,
             reset = "v = 0*volt"    # changed to string
@@ -59,7 +59,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     netobjs+=[Bv,Bh]
     
     #---------------------- Initialize State Variables
-    neuron_group_rvisible.I_d = 0.
+    neuron_group_rvisible.I_d = 0. * amp
     
     
     #---------------------- Connections and Synapses

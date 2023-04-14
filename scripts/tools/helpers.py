@@ -224,7 +224,7 @@ def spike_histogram(spike_monitor, t_start, t_stop):
     return np.array(list(zip(*[k,count])))
 
 def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str):
-    mypath = "output/"+date_str+"/"+date_time_str[11:16]
+    mypath = "output/"+date_str+"/"+date_time_str[11:13]+"-"+date_time_str[14:16]
     if not os.path.isdir(mypath):
         os.makedirs(mypath)
 

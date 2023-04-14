@@ -12,14 +12,14 @@ dcmt = 35                               # duty cyle in multiples of t_ref
 
 #----------------------------------------- Neuron parameters
 t_ref = 0.004 * second                  # refractory period ?
-t_sim = dcmt*t_ref*5000                 # simulation time ? originally 10000
+t_sim = dcmt*t_ref*700                 # simulation time ? originally 10000
 bias_input_rate = 1000. * Hz            # input rate ?
 beta = 2.04371561e+09 # 1/amp 
 gamma = np.exp(9.08343441e+00)* Hz
 tau_noise = .001 * ms                   # noise time constant ?
 tau_rec = t_ref                         # recovery time constant ?
 theta = .1 * volt  
-cm = 1e-12 * farad                      # membrane capacitance ? 
+Cm = 1e-12 * farad                      # membrane capacitance ? 
 beta_fi = 1./cm/theta                   # beta for F-I curve  ??
 sigma = 1.e-9 * amp                     # noise amplitude - This is now used in the queation creations instead of wnsigma --> not sure what it originally was for...
 cal_i_lk = 0.0e-10                      # leak current

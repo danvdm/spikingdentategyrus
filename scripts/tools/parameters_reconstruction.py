@@ -41,7 +41,7 @@ cal_i_lk = 0.0e-10                          # leak current ??
 g_leak = 1e-9 * siemens                     # leak conductance ??
 # dt = 0.00005
 n_samples = t_sim/(dcmt*t_ref)+1
-wnsigma = 4.24e-11
+wnsigma = 4.24e-11 * amp
 
 t_burn_percent = 10.
 tau_learn = 0.01 * second
