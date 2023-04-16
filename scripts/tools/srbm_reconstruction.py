@@ -173,9 +173,9 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
                 )
     Srs.connect()
     
-    M_rec = Whv/beta
+    """ M_rec = Whv/beta
     for i in range(M_rec.shape[0]):
-        Srs.w[i,:] = M_rec[i,:]
+        Srs.w[i,:] = M_rec[i,:] """
 
     #S_helper_v = Connection(neuron_group_rvisible_helper, neuron_group_rvisible, 'I_rec')
     S_helper_v = Synapses(neuron_group_rvisible_helper, neuron_group_rvisible, 
