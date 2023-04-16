@@ -1,6 +1,7 @@
+import numpy as np
 from brian2 import *
 from tools.helpers import *
-import numpy as np
+from tools.parameters_main import *
 import matplotlib.pyplot as plt
 
 def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None):
@@ -87,7 +88,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
                         lastupdate = t''' 
                         )
     Sbv.connect(j='i')
-    Sbv.w[:] = np.concatenate([b_v,b_c])/beta/bias_input_rate/tau_rec
+    Sbv.w[:] = np.concatenate([b_v,b_c])/beta_parameter/bias_input_rate/tau_rec
     
     Sbh = Synapses(Bh, neuron_group_rhidden, 
                    model='''
@@ -114,7 +115,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
                         ''' 
                         )
     Sbh.connect(j='i')
-    Sbh.w[:] = b_h[:]/beta/bias_input_rate/tau_rec
+    Sbh.w[:] = b_h[:]/beta_parameter/bias_input_rate/tau_rec
     
     Srs=Synapses(neuron_group_rvisible, neuron_group_rhidden,
                  model='''   
@@ -144,7 +145,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     Srs.connect()
     netobjs+=[Sbv,Sbh,Srs]
     
-    M_rec = Whv/beta
+    M_rec = Whv/beta_parameter
     for i in range(M_rec.shape[0]):
         Srs.w[i,:] = M_rec[i,:]
 
@@ -213,7 +214,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
 
     @network_operation(clock=Clock(dt=plot_every*dcmt*t_ref))
     def plot_performance(when='after'):   
-        W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta
+        W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta_parameter
         Wvh=W[:N_v,:]
         Wch=W[N_v:,:] 
         accuracy_test = classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit)[0]    

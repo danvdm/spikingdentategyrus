@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from tools.parameters_main import *
+#from tools.parameters_main import *
 
 # Set path to data
 path_to_data = 'data/mnist_reduced.pkl.gz'
@@ -54,7 +54,7 @@ def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None
     
     return iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l
 
-def load_mnist_data(min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
+def load_mnist_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
     #------------------------------------------ Create Input Vector
     mnist_data = load_MNIST(n_samples,
                             min_p = min_p,
@@ -85,7 +85,7 @@ def create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = .00001, max_p = .95
 
     return Id
 
-def create_Id(data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
+def create_Id(N_v, N_c, n_c_unit, beta, n_samples = None, data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
     '''Creates the input vector sequence with the clamped input. If data is True, then the MNIST data is loaded. 
        If data is a tuple, then the data is used. If data is False, then the input vector sequence is all zeros.'''
     if hasattr(data, '__len__'):
@@ -93,7 +93,7 @@ def create_Id(data = True, c_min_p = 1e-4, c_max_p = .95, seed = None):
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     elif data == True:
-        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = load_mnist_data(seed = seed)
+        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = load_mnist_data(n_samples, seed = seed)
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     else:
@@ -141,7 +141,7 @@ def create_weight_matrix(N_v, N_h, N_c, sigma = 0.1):
     '''Creates the weight matrix for the RBM.'''
     return np.random.normal(0, sigma, size=(N_v+N_c, N_h))
 
-def create_rbm_parameters(wmean=0, b_vmean=0, b_hmean=0):
+def create_rbm_parameters(N_v, N_h, N_c, wmean=0, b_vmean=0, b_hmean=0):
     '''Creates the RBM parameters.'''
     #------------------------------------------ Bias and weights
     b_v, b_c, b_h = create_bias_vectors(N_v, N_c, N_h)
@@ -184,7 +184,7 @@ def load_matrices(date, time):
 
     return W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB
 
-def create_single_Id(idx, data, min_p = 1e-16, max_p = .9999, seed = None, mult_class=0.0, mult_data=1.0):
+def create_single_Id(idx, data, N_v, N_c, n_c_unit, beta_parameter, min_p = 1e-16, max_p = .9999, seed = None, mult_class=0.0, mult_data=1.0):
     
     iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = data
     Idp = np.ones([N_v+N_c])*min_p
@@ -193,7 +193,7 @@ def create_single_Id(idx, data, min_p = 1e-16, max_p = .9999, seed = None, mult_
     cl[int(iv_l_seq[i]*n_c_unit):int((iv_l_seq[i]+1)*n_c_unit)] = max_p
     Idp[N_v:] = clamped_input_transform(cl, min_p = min_p, max_p = max_p)*mult_class
     Idp[:N_v] = clamped_input_transform(iv_seq[i,:], min_p = min_p, max_p = max_p)*mult_data
-    Id = (Idp /beta)
+    Id = (Idp /beta_parameter)
     return Id
 
 def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):

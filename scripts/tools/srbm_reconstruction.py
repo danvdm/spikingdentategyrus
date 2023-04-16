@@ -1,7 +1,7 @@
+import numpy as np
 from brian2 import *
 from tools.helpers import *
 from tools.parameters_reconstruction import *
-import numpy as np
 import matplotlib.pyplot as plt
 
 def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mnist_data = None):
@@ -131,7 +131,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
                         lastupdate = t''' 
                         )
     Sbv.connect(j='i')
-    Sbv.w[:] = np.concatenate([b_v,b_c])/beta/bias_input_rate/tau_rec
+    Sbv.w[:] = np.concatenate([b_v,b_c])/beta_parameter/bias_input_rate/tau_rec
     
     Sbh = Synapses(Bh, neuron_group_rhidden, 
               model='''
@@ -153,7 +153,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
                         lastupdate = t''' 
                         )
     Sbh.connect(j='i')
-    Sbh.w[:] = b_h[:]/beta/bias_input_rate/tau_rec
+    Sbh.w[:] = b_h[:]/beta_parameter/bias_input_rate/tau_rec
     
     Srs=Synapses(neuron_group_rvisible, neuron_group_rhidden,
            model='''   Apre : 1
@@ -176,7 +176,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
                 )
     Srs.connect()
     
-    M_rec = Whv/beta
+    M_rec = Whv/beta_parameter
     for i in range(M_rec.shape[0]):
         Srs.w[i,:] = M_rec[i,:]
 
@@ -184,9 +184,9 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
     S_helper_v = Synapses(neuron_group_rvisible_helper, neuron_group_rvisible, 
                           "w : 1",
                           on_pre='I_rec += w * amp') # added * amp
-    #S_helper_v.connect_random(neuron_group_rvisible_helper, neuron_group_rvisible, p=0.5, weight = -wv/N_helper/.5/beta/tau_rec)
+    #S_helper_v.connect_random(neuron_group_rvisible_helper, neuron_group_rvisible, p=0.5, weight = -wv/N_helper/.5/beta_parameter/tau_rec)
     S_helper_v.connect(p=0.5)
-    S_helper_v.w = -wv/N_helper/.5/beta/tau_rec
+    S_helper_v.w = -wv/N_helper/.5/beta_parameter/tau_rec
     S_helperi_v = Synapses(neuron_group_rvisible, neuron_group_rvisible_helper, 
                            on_pre = "I_rec_post+= -wb/.5/N_v/beta_fi/tau_rec")
     #S_helperi_v.connect_random(neuron_group_rvisible, neuron_group_rvisible_helper,sparseness=0.5)
@@ -195,7 +195,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
                           "w : 1",
                           on_pre='I_rec += w * amp')  # added * amp
     S_helper_h.connect(p=0.5)
-    S_helper_h.w = -wh/N_helper/.5/beta/tau_rec
+    S_helper_h.w = -wh/N_helper/.5/beta_parameter/tau_rec
 
     S_helperi_h = Synapses(neuron_group_rhidden, neuron_group_rhidden_helper, 
                           "w : 1",
@@ -281,11 +281,11 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
             w_hist_c.append(Wt[N_v:,:].mean())
             b_hist_vc.append(Sbv.w.data.mean())
             b_hist_h.append(Sbh.w.data.mean())
-            W=Srs.w.data.copy().reshape(N_v+N_c, N_h)*beta
+            W=Srs.w.data.copy().reshape(N_v+N_c, N_h)*beta_parameter
             Wvh=W[:N_v,:]
             Wch=W[N_v:,:]
-            mBv = Sbv.w.data*beta*tau_rec*bias_input_rate
-            mBh = Sbh.w.data*beta*tau_rec*bias_input_rate
+            mBv = Sbv.w.data*beta_parameter*tau_rec*bias_input_rate
+            mBh = Sbh.w.data*beta_parameter*tau_rec*bias_input_rate
             b_c = mBv[N_v:(N_v+N_c)]
             b_v = mBv[:N_v]
             b_h = mBh

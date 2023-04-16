@@ -1,7 +1,6 @@
 # Parameters demo: 
 from brian2 import *
 
-# Parameters demo: 
 n_classes = 10
 N_v = N_inputs =784
 N_c = N_class = 40
@@ -30,7 +29,7 @@ t_sim = T3_e
 
 t_ref = 0.004 * second
 bias_input_rate = 1000. * Hz # added Hz
-beta = 2.04371561e+09
+beta_parameter = 2.04371561e+09
 gamma = np.exp(9.08343441e+00) * Hz # added Hz
 tau_noise = .001 * second
 tau_rec = t_ref
@@ -40,7 +39,8 @@ beta_fi = 1./cm/theta
 sigma = 1.e-9 * amp
 cal_i_lk = 0.0e-10
 g_leak = 1e-9 * siemens
-dt = 0.00005
+#dt = 0.00005                        # Does the whole thing depend on this? Seems to work when message of variable conflict does not appear--- not internal variable is used??!
+# nevermind - does not seem to play a role in the end
 n_samples = t_sim/(dcmt*t_ref)+1
 wnsigma = 4.24e-11
 
@@ -50,15 +50,15 @@ tau_learn = 0.01 * second
 deltaT = ((0.49-t_burn_percent/100)*dcmt*t_ref)
 
 eta = 0e-3
-epsilon = eta/beta*t_ref**2*(dcmt*t_ref)/deltaT
-epsilon_bias = eta/beta*t_ref*(1./bias_input_rate)*(dcmt*t_ref)/deltaT
+epsilon = eta/beta_parameter*t_ref**2*(dcmt*t_ref)/deltaT
+epsilon_bias = eta/beta_parameter*t_ref*(1./bias_input_rate)*(dcmt*t_ref)/deltaT
 
-deltaA  = eta/beta/tau_learn*(dcmt*t_ref)/deltaT*t_ref**2 / second
-deltaAbias = eta/beta/tau_learn*(dcmt*t_ref)/deltaT*t_ref*(1./bias_input_rate) / second
+deltaA  = eta/beta_parameter/tau_learn*(dcmt*t_ref)/deltaT*t_ref**2 / second
+deltaAbias = eta/beta_parameter/tau_learn*(dcmt*t_ref)/deltaT*t_ref*(1./bias_input_rate) / second
 
 i_inj = (- np.log(float(gamma))
          - np.log(float(t_ref))
-         )/beta * amp
+         )/beta_parameter * amp
 
 sigm = lambda x: 1./(1+exp(-x))
 #helper parameters
@@ -68,16 +68,16 @@ wb = 12.5
 N_helper=100
          
          
-def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
+def exp_prob_beta_gamma(dt, beta_parameter, g_leak, gamma, t_ref):
     def func(V):
-        return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta*g_leak+np.log(gamma))*float(dt)))
+        return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta_parameter*g_leak+np.log(gamma))*float(dt)))
     return func
 
 def learning_rate_decay(n,n0=1):
     return float(n0)/(float(n0)+n)
 
 Th = Bu * wb
-i_inj_v_helper =  Th/beta_fi
+i_inj_v_helper =  Th/beta_parameter
 i_inj_v_helper
 
 #----------------------------------------- Neuron equations
