@@ -24,7 +24,7 @@ beta_fi = 1./cm/theta                   # beta for F-I curve  ??
 sigma = 1.e-9 * amp                     # noise amplitude - This is now used in the queation creations instead of wnsigma --> not sure what it originally was for...
 cal_i_lk = 0.0e-10                      # leak current
 g_leak = 1e-9 * siemens                 # leak conductance
-# dt = 0.00005 * second                 # time step --> Not necessary anymore 
+dt = 0.00005 * second                 # time step --> Not necessary anymore ?!?!?!
 n_samples = t_sim/(dcmt*t_ref)+1        # number of samples
 wnsigma = 4.24e-11 * amp                # This the reason why its slow. Use sigma instead!!!
 
