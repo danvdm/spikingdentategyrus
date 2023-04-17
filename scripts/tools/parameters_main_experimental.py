@@ -2,18 +2,14 @@
 from brian2 import *
 from tools.common_parameters import *
 
-""" n_classes = 10                          # number of classes
-N_v = N_inputs =784                     # number of input neurons
-N_c = N_class = 40                      # number of class neurons
-N_h = N_hidden =100      #500           # number of hidden neurons
-
-n_c_unit =  N_c/n_classes               # number of class neurons per class """
-
 dcmt = 35                               # duty cyle in multiples of t_ref
+
+sim_time = 150
+steepness = 1.0
 
 #----------------------------------------- Neuron parameters
 t_ref = 0.004 * second                  # refractory period 
-t_sim = dcmt*t_ref*2000                  # simulation time - originally 10000
+t_sim = dcmt*t_ref*sim_time                  # simulation time - originally 10000
 bias_input_rate = 1000. * Hz            # Mean firing rate of bias Poisson spike train
 beta_parameter = 2.04371561e+09 # 1/amp 
 gamma = np.exp(9.08343441e+00)* Hz      # Baseline firing rate

@@ -1,6 +1,5 @@
 import numpy as np
 import os
-#from tools.parameters_main import *
 
 # Set path to data
 path_to_data = 'data/mnist_reduced.pkl.gz'
@@ -202,10 +201,11 @@ def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
     return func
 
          
-def custom_step(clock_object):
+def custom_step(clock_object, sim_time):
     tmod_now, n_now = clock_object.tmod, clock_object.n
     clock_object.tmod = np.mod(clock_object.tmod+1, clock_object.mod)
     clock_object.n = int(clock_object.t/(clock_object.period))
+    clock_object.cycle += 1 / (sim_time * 100)
     return tmod_now, n_now
 
 def spike_histogram(spike_monitor, t_start, t_stop):

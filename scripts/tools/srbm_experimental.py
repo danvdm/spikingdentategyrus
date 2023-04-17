@@ -1,6 +1,6 @@
 import numpy as np
 from brian2 import *
-from tools.helpers import *
+from tools.functions import *
 from tools.parameters_main_experimental import *
 import matplotlib.pyplot as plt
 
@@ -143,13 +143,18 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     mod = 100
     ev = Clock(period/mod)
     ev.add_attribute(name = "n")
+    ev.add_attribute(name = "cycle")
     ev.add_attribute(name = "tmod")
     ev.add_attribute(name = "mod")
     ev.add_attribute(name = "period")
     ev.n = 0
+    ev.cycle = 0
     ev.tmod = 0
     ev.mod = mod
     ev.period = period  
+
+    timepoint = []
+    growth_factor_list = []
         
     # Each epoch consists of a LTP phase during which the data is presented (construction), 
     # followed by a free- running LTD phase (reconstruction). The weights are updated asynchronously 
@@ -157,7 +162,11 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
 
     @network_operation(clock = ev)
     def g_update(when='after'):
-        tmod, n = custom_step(ev)
+        tmod, n = custom_step(ev, sim_time)
+        timepoint.append(ev.cycle)
+        growth_factor = np.exp(-np.exp(-steepness * (ev.cycle*10-5)))
+        growth_factor_list.append(growth_factor)
+
         if tmod < 50:   # while below 50 cycles, clamp data to visible units. Otherwise input current = 0 below 50 is data phase, above 50 is reconstruction phase
             neuron_group_rvisible.I_d = Id[n] * amp
         else:
@@ -190,6 +199,8 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             Sbv.Apost=0
             Sbh.Apre=0
             Sbh.Apost=0
+
+        
 
     netobjs += [g_update]
     

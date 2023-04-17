@@ -1,6 +1,6 @@
 import numpy as np
 from brian2 import *
-from tools.helpers import *
+from tools.functions import *
 from tools.parameters_reconstruction import *
 import matplotlib.pyplot as plt
 
