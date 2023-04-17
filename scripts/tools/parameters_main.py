@@ -12,7 +12,7 @@ dcmt = 35                               # duty cyle in multiples of t_ref
 
 #----------------------------------------- Neuron parameters
 t_ref = 0.004 * second                  # refractory period ?
-t_sim = dcmt*t_ref*1000                 # simulation time ? originally 10000
+t_sim = dcmt*t_ref*2000                 # simulation time ? originally 10000
 bias_input_rate = 1000. * Hz            # input rate ?
 beta_parameter = 2.04371561e+09 # 1/amp 
 gamma = np.exp(9.08343441e+00)* Hz
