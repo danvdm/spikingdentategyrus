@@ -1,12 +1,7 @@
 # Parameters demo: 
 from brian2 import *
+from tools.common_parameters import *
 
-n_classes = 10
-N_v = N_inputs =784
-N_c = N_class = 40
-N_h = N_hidden =500
-
-n_c_unit =  N_c/n_classes
 
 dcmt = 75 #duty cyle in multiples of t_ref
 
@@ -28,19 +23,18 @@ T3_e = 3*T+2*delay+ init_delay
 t_sim = T3_e
 
 t_ref = 0.004 * second
-bias_input_rate = 1000. * Hz # added Hz
+bias_input_rate = 1000. * Hz # added Hz # 1000
 beta_parameter = 2.04371561e+09
 gamma = np.exp(9.08343441e+00) * Hz # added Hz
 tau_noise = .001 * second
 tau_rec = t_ref
 theta = .1 * volt
 cm = 1e-12 * farad
-beta_fi = 1./cm/theta
-sigma = 1.e-9 * amp
+beta_fi = 1./cm/theta      
+sigma = 7.e-10 * amp   # 1.e-9 # noise
 cal_i_lk = 0.0e-10
 g_leak = 1e-9 * siemens
-#dt = 0.00005                        # Does the whole thing depend on this? Seems to work when message of variable conflict does not appear--- not internal variable is used??!
-# nevermind - does not seem to play a role in the end
+#dt = 0.00005                       
 n_samples = t_sim/(dcmt*t_ref)+1
 wnsigma = 4.24e-11
 
@@ -80,15 +74,3 @@ Th = Bu * wb
 i_inj_v_helper =  Th/beta_parameter
 i_inj_v_helper
 
-#----------------------------------------- Neuron equations
-
-eqs_str_lif_wnrd = '''
-dv/dt = (-g*v + I_inj + I_rec + sigma*xi*t_ref**0.5 + I_d)/Cm :volt
-dI_rec/dt = -I_rec/tau_rec : amp
-I_d : amp
-'''
-
-eqs_str_lif_wnr = '''
-dv/dt = (-g_leak*v + i_inj + I_rec + sigma*xi*t_ref**0.5)/Cm :volt
-dI_rec/dt = -I_rec/tau_rec : amp
-'''
