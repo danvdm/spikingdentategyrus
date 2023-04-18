@@ -249,3 +249,30 @@ def generate_pattern(lenght, perc_active = 0.1):
     active_idx = np.random.choice(lenght, n_active, replace=False)
     pattern[active_idx] = 1
     return pattern
+
+def generate_prototypes(n_prototypes, p, length):
+    prototypes = np.zeros((n_prototypes, length))
+    for i in range(n_prototypes):
+        prototypes[i] = generate_pattern(length, p)
+    return prototypes
+
+def generate_prototype_variations(prototypes, n_per_prototype, percent_variation):
+    '''generates one array with variations of original prototypes by flipping a certain percentage of bits and one list with the indices of the original prototypes'''
+    n_prototypes, length = prototypes.shape
+    variations = np.zeros((n_prototypes*n_per_prototype, length))
+    original_prototypes = []
+    for i in range(n_prototypes):
+        for j in range(n_per_prototype):
+            variations[i*n_per_prototype+j] = prototypes[i] + np.random.binomial(1, percent_variation, length)
+            variations[i*n_per_prototype+j][variations[i*n_per_prototype+j] > 1] = 0
+            original_prototypes.append(i)
+    return variations, original_prototypes
+
+def average_cosine_similarity(data):
+    '''calculates the average cosine similarity of the data'''
+    n_samples, length = data.shape
+    similarity = 0
+    for i in range(n_samples):
+        for j in range(i+1, n_samples):
+            similarity += np.dot(data[i], data[j])/(np.linalg.norm(data[i])*np.linalg.norm(data[j]))
+    return similarity/(n_samples*(n_samples-1)/2)

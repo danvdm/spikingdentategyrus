@@ -33,12 +33,12 @@ tau_rec = t_ref
 theta = .1 * volt
 cm = 1e-12 * farad
 beta_fi = 1./cm/theta      
-sigma = 7.e-10 * amp   # 1.e-9 # noise
+sigma = 1.e-9 #* amp   
 cal_i_lk = 0.0e-10
 g_leak = 1e-9 * siemens
 #dt = 0.00005                       
 n_samples = t_sim/(dcmt*t_ref)+1
-wnsigma = 4.24e-11
+wnsigma = 4.24e-11 * amp / second**-0.5
 
 t_burn_percent = 10.
 tau_learn = 0.01 * second
