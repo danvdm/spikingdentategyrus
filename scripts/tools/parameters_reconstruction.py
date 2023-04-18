@@ -3,6 +3,8 @@ from brian2 import *
 from tools.common_parameters import *
 
 
+sim_time = 1000
+
 dcmt = 75 #duty cyle in multiples of t_ref
 
 #----------------------------------------- Neuron parameters
@@ -23,7 +25,7 @@ T3_e = 3*T+2*delay+ init_delay
 t_sim = T3_e
 
 t_ref = 0.004 * second
-bias_input_rate = 1000. * Hz # added Hz # 1000
+bias_input_rate = sim_time * Hz # added Hz # 1000
 beta_parameter = 2.04371561e+09
 gamma = np.exp(9.08343441e+00) * Hz # added Hz
 tau_noise = .001 * second

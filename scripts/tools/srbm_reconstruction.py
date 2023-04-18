@@ -211,17 +211,19 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mni
     mod = 100
     ev = Clock(period/mod)
     ev.add_attribute(name = "n")
+    ev.add_attribute(name = "cycle")
     ev.add_attribute(name = "tmod")
     ev.add_attribute(name = "mod")
     ev.add_attribute(name = "period")
     ev.n = 0
+    ev.cycle = 0
     ev.tmod = 0
     ev.mod = mod
     ev.period = period
 
     @network_operation(clock = ev)
     def g_update(when='after'):
-        tmod, n = custom_step(ev)
+        tmod, n = custom_step(ev, sim_time)
         if tmod < 50:
             neuron_group_rvisible.I_d = Id[n]  * amp
         else:

@@ -19,7 +19,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             reset = "v = 0*volt",    # changed to string
             method = method
             )
-    
+
     neuron_group_rhidden = NeuronGroup(\
             N_h,
             model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
@@ -47,8 +47,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     
     #---------------------- Initialize State Variables
     neuron_group_rvisible.I_d = 0. * amp
-    
-    
+    neuron_group_rvisible.age = age_v
+    neuron_group_rhidden.age = age_h
+
+
     #---------------------- Connections and Synapses
     #Bias units    
     Sbv = Synapses(Bv, neuron_group_rvisible, 
@@ -164,7 +166,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     def g_update(when='after'):
         tmod, n = custom_step(ev, sim_time)
         timepoint.append(ev.cycle)
-        growth_factor = np.exp(-np.exp(-steepness * (ev.cycle*10-5)))
+        growth_factor = gomperz_function((ev.cycle*2-1), steepness)
         growth_factor_list.append(growth_factor)
 
         if tmod < 50:   # while below 50 cycles, clamp data to visible units. Otherwise input current = 0 below 50 is data phase, above 50 is reconstruction phase
@@ -199,6 +201,8 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             Sbv.Apost=0
             Sbh.Apre=0
             Sbh.Apost=0
+        
+        neuron_group_rvisible.age = age_v
 
         
 

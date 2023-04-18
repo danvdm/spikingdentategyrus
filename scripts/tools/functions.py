@@ -199,14 +199,16 @@ def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
     def func(V):
         return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta*g_leak+np.log(gamma))*float(dt)))
     return func
-
-         
+  
 def custom_step(clock_object, sim_time):
     tmod_now, n_now = clock_object.tmod, clock_object.n
     clock_object.tmod = np.mod(clock_object.tmod+1, clock_object.mod)
     clock_object.n = int(clock_object.t/(clock_object.period))
     clock_object.cycle += 1 / (sim_time * 100)
     return tmod_now, n_now
+
+def gomperz_function(x, steepness):
+    return np.exp(-np.exp(-steepness*x))
 
 def spike_histogram(spike_monitor, t_start, t_stop):
     '''
@@ -239,3 +241,11 @@ def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_
     mB.dump(mypath+"/mB.dat")
 
     print("Matrices saved to output/"+mypath)
+
+def generate_pattern(lenght, perc_active = 0.1):
+    '''Generates a random pattern with perc_active active units.'''
+    pattern = np.zeros(lenght)
+    n_active = int(lenght*perc_active)
+    active_idx = np.random.choice(lenght, n_active, replace=False)
+    pattern[active_idx] = 1
+    return pattern
