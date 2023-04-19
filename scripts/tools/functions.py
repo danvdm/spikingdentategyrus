@@ -22,7 +22,7 @@ def bound_data(data, min_p = 0.0001, max_p = .95, binary = False):
     data[data < min_p_] = min_p
     
 def select_equal_n_labels(n, data, labels, classes = None, seed=None):
-    '''Selects n samples from each class.'''
+    '''Selects n samples from data and labels, such that the number of samples from each class is equal.'''
     if classes is None:
         classes = range(10)    
     n_classes = len(classes)
@@ -37,14 +37,19 @@ def select_equal_n_labels(n, data, labels, classes = None, seed=None):
     iv_l_seq = labels[a]
     return iv_seq, iv_l_seq   
 
-def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, datafile = path_to_data, num_classes = range(10)):
-    import gzip, pickle
-    mat = pickle.load(gzip.open(datafile, 'r'), encoding='latin1')
-
-    train_iv = mat['train']
-    train_iv_l = mat['train_label']
-    test_iv = mat['test']
-    test_iv_l = mat['test_label']
+def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, datafile = path_to_data, num_classes = range(10), load_from_drive = True, data = None):
+    if load_from_drive:
+        import gzip, pickle
+        mat = pickle.load(gzip.open(datafile, 'r'), encoding='latin1')
+        train_iv = mat['train']
+        train_iv_l = mat['train_label']
+        test_iv = mat['test']
+        test_iv_l = mat['test_label']
+    else:
+        train_iv = data[0]
+        train_iv_l = data[1]
+        test_iv = data[2]
+        test_iv_l = data[3]
     
     bound_data(train_iv, min_p, max_p, binary)
     bound_data(test_iv, min_p, max_p, binary)
@@ -54,6 +59,7 @@ def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None
     return iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l
 
 def load_mnist_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
+    '''Loads the MNIST data and returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
     #------------------------------------------ Create Input Vector
     mnist_data = load_MNIST(n_samples,
                             min_p = min_p,
@@ -163,9 +169,9 @@ def create_rbm_parameters(N_v, N_h, N_c, wmean=0, b_vmean=0, b_hmean=0):
     ylabel('Neuron index')
     xlim(-0.1, 1.1) """
 
-def load_matrices(date, time):
+def load_matrices(date, time, path = "output/"):
     '''Loads the matrices from the output folder.'''
-    path = "output/"+date+"/"+time+"/"
+    path = path+date+"/"+time+"/"
     try:
         W = np.load(path+"/W.dat", allow_pickle=True)
         Wvh = np.load(path+"/Wvh.dat", allow_pickle=True)
@@ -225,8 +231,8 @@ def spike_histogram(spike_monitor, t_start, t_stop):
     count = np.array(list(map(f, v)), dtype='float')/delta_t
     return np.array(list(zip(*[k,count])))
 
-def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str):
-    mypath = "output/"+date_str+"/"+date_time_str[11:13]+"-"+date_time_str[14:16]
+def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str, path = "output/"):
+    mypath = path+date_str+"/"+date_time_str[11:13]+"-"+date_time_str[14:16]
     if not os.path.isdir(mypath):
         os.makedirs(mypath)
 
@@ -276,3 +282,16 @@ def average_cosine_similarity(data):
         for j in range(i+1, n_samples):
             similarity += np.dot(data[i], data[j])/(np.linalg.norm(data[i])*np.linalg.norm(data[j]))
     return similarity/(n_samples*(n_samples-1)/2)
+
+def train_test_split(data, labels, train_perccentage = 0.8, seed = 0):
+    np.random.seed(seed)
+    idx = np.arange(len(data))
+    np.random.shuffle(idx)
+    data = data[idx]
+    labels = np.array(labels)[idx]
+    train_idx = int(len(data) * train_perccentage)
+    train_data = data[:train_idx]
+    train_labels = labels[:train_idx]
+    test_data = data[train_idx:]
+    test_labels = labels[train_idx:]
+    return train_data, train_labels, test_data, test_labels

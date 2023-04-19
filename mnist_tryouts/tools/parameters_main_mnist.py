@@ -1,7 +1,7 @@
 # Parameters for the simulation
 from brian2 import *
-from tools.common_parameters import *
-from tools.functions import *
+from mnist_tryouts.tools.parameters_common_mnist import *
+from scripts.tools.functions import *
 
 dcmt = 35                               # duty cyle in multiples of t_ref
 
