@@ -37,7 +37,8 @@ def select_equal_n_labels(n, data, labels, classes = None, seed=None):
     iv_l_seq = labels[a]
     return iv_seq, iv_l_seq   
 
-def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, datafile = path_to_data, num_classes = range(10), load_from_drive = True, data = None):
+def get_data(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, datafile = path_to_data, num_classes = range(10), load_from_drive = True, data = None):
+    '''Loads data either from drive or from memory. Returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
     if load_from_drive:
         import gzip, pickle
         mat = pickle.load(gzip.open(datafile, 'r'), encoding='latin1')
@@ -58,8 +59,8 @@ def load_MNIST(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None
     
     return iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l
 
-def load_mnist_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
-    '''Loads the MNIST data and returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
+def prepare_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
+    '''Loads data and returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
     #------------------------------------------ Create Input Vector
     mnist_data = load_MNIST(n_samples,
                             min_p = min_p,
@@ -295,3 +296,23 @@ def train_test_split(data, labels, train_perccentage = 0.8, seed = 0):
     test_data = data[train_idx:]
     test_labels = labels[train_idx:]
     return train_data, train_labels, test_data, test_labels
+
+def save_data(data, var_prot, repl_var, path = "data/"):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    len_stimuli = len(data[0][0])
+    n_obs = len(data[0])
+    n_classes = len(np.unique(data[1]))
+    array = np.array(data, dtype=object)
+    file_name = path + "data_" + str(n_classes) + "_" + str(var_prot) + "_" + str(repl_var) + "_" + str(len_stimuli) + "_" + str(n_obs)
+    np.save(file_name, array)
+
+def load_data(len_stimuli, n_obs, n_classes, var_prot, repl_var, path = "data/"):
+    file_name = path + "data_" + str(n_classes) + "_" + str(var_prot) + "_" + str(repl_var) + "_" + str(len_stimuli) + "_" + str(n_obs) + ".npy"
+    try:
+        data = np.load(file_name, allow_pickle=True)
+    except:
+        print("File not found. Try again.")
+        return None
+    
+    return data
