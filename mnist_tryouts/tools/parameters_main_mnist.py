@@ -1,11 +1,11 @@
 # Parameters for the simulation
 from brian2 import *
-from mnist_tryouts.tools.parameters_common_mnist import *
-from scripts.tools.functions import *
+from tools.parameters_common_mnist import *
+from tools.functions import *
 
 dcmt = 35                               # duty cyle in multiples of t_ref
 
-sim_time = 200
+sim_time = 2000
 steepness = 5.0
 perc_vis = 1
 perc_hid = 0.5

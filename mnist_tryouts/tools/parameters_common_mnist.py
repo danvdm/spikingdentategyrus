@@ -1,7 +1,7 @@
 n_classes = 10                          # number of classes
 N_v = N_inputs =784                     # number of input neurons
 N_c = N_class = 40                      # number of class neurons
-N_h = N_hidden =200      #500           # number of hidden neurons
+N_h = N_hidden =100      #500           # number of hidden neurons
 
 n_c_unit =  N_c/n_classes               # number of class neurons per class
 

@@ -1,7 +1,7 @@
 import numpy as np
 from brian2 import *
-from scripts.tools.functions import *
-from mnist_tryouts.tools.parameters_reconstruction_mnist import *
+from tools.functions import *
+from tools.parameters_reconstruction_mnist import *
 import matplotlib.pyplot as plt
 
 def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, display=False, mnist_data = None):
