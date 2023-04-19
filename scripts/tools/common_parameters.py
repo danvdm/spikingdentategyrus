@@ -1,5 +1,3 @@
-from .generate_data import *
-
 n_classes = 5                          # number of classes
 N_v = N_inputs = 100                     # number of input neurons
 N_c = N_class = 20                      # number of class neurons

@@ -1,6 +1,6 @@
 # Parameters demo: 
 from brian2 import *
-from tools.parameters_common_mnist import *
+from tools.common_parameters import *
 
 
 sim_time = 1000

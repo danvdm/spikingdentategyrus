@@ -311,6 +311,7 @@ def load_data(len_stimuli, n_obs, n_classes, var_prot, repl_var, path = "data/")
     file_name = path + "data_" + str(n_classes) + "_" + str(var_prot) + "_" + str(repl_var) + "_" + str(len_stimuli) + "_" + str(n_obs) + ".npy"
     try:
         data = np.load(file_name, allow_pickle=True)
+        print("Data loaded from " +file_name)   
     except:
         print("File not found. Try again.")
         return None
