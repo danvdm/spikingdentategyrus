@@ -62,7 +62,7 @@ def get_data(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, 
 def prepare_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
     '''Loads data and returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
     #------------------------------------------ Create Input Vector
-    mnist_data = load_MNIST(n_samples,
+    mnist_data = get_data(n_samples,
                             min_p = min_p,
                             max_p = max_p,
                             binary = binary,
@@ -99,7 +99,7 @@ def create_Id(N_v, N_c, n_c_unit, beta, n_samples = None, data = True, c_min_p =
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     elif data == True:
-        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = load_mnist_data(n_samples, seed = seed)
+        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = prepare_data(n_samples, seed = seed)
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     else:
@@ -191,7 +191,6 @@ def load_matrices(date, time, path = "output/"):
     return W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB
 
 def create_single_Id(idx, data, N_v, N_c, n_c_unit, beta_parameter, min_p = 1e-16, max_p = .9999, seed = None, mult_class=0.0, mult_data=1.0):
-    
     iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = data
     Idp = np.ones([N_v+N_c])*min_p
     i = np.nonzero(iv_l_seq==idx)[0][0]
@@ -203,6 +202,7 @@ def create_single_Id(idx, data, N_v, N_c, n_c_unit, beta_parameter, min_p = 1e-1
     return Id
 
 def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
+    '''Returns a function that calculates the probability of a spike given the membrane potential V.'''
     def func(V):
         return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta*g_leak+np.log(gamma))*float(dt)))
     return func
