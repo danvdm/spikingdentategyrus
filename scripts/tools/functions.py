@@ -1,4 +1,5 @@
 import numpy as np
+from brian2 import *
 import os
 
 # Set path to data
@@ -62,7 +63,7 @@ def get_data(n_samples, min_p = 0.0001, max_p = .95, binary = False, seed=None, 
 def prepare_data(n_samples = None, min_p = 1e-4, max_p=.95, binary=False, seed=None, n_classes = range(10)):
     '''Loads data and returns the input vector sequence, the input vector label sequence, the training input vector, the training input vector label, the test input vector, and the test input vector label.'''
     #------------------------------------------ Create Input Vector
-    mnist_data = load_MNIST(n_samples,
+    mnist_data = get_data(n_samples,
                             min_p = min_p,
                             max_p = max_p,
                             binary = binary,
@@ -99,7 +100,7 @@ def create_Id(N_v, N_c, n_c_unit, beta, n_samples = None, data = True, c_min_p =
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     elif data == True:
-        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = load_mnist_data(n_samples, seed = seed)
+        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = prepare_data(n_samples, seed = seed)
         Idp = create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = c_min_p, max_p = c_max_p)
         Id = (Idp /beta)
     else:
@@ -114,7 +115,7 @@ def classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_u
         X= np.zeros([int(numcases), int(n_c_unit)*int(n_classes)]);
         X[:, int(n_c_unit*i):int(n_c_unit*(i+1))] = 1;
         F[:,i] = np.tile(b_c[i],numcases)*X[:,i]+\
-                 np.sum(np.log(np.exp(np.dot(test_data, Wvh)+np.dot(X,Wch)+np.tile(b_h,numcases).reshape(numcases,-1))+1), axis=1);
+                 np.sum(np.log(np.exp(np.dot(test_data, Wvh)+np.dot(X,Wch)+np.tile(b_h,numcases).reshape(numcases,-1))+1), axis=1)
     prediction= np.argmax(F, axis=1);
     accuracy = sum(prediction==test_labels)/numcases # changed from: 1-float(sum(prediction!=test_labels))/numcases
     assert 1>=accuracy>=.1/n_classes
@@ -191,7 +192,6 @@ def load_matrices(date, time, path = "output/"):
     return W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB
 
 def create_single_Id(idx, data, N_v, N_c, n_c_unit, beta_parameter, min_p = 1e-16, max_p = .9999, seed = None, mult_class=0.0, mult_data=1.0):
-    
     iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = data
     Idp = np.ones([N_v+N_c])*min_p
     i = np.nonzero(iv_l_seq==idx)[0][0]
@@ -203,6 +203,7 @@ def create_single_Id(idx, data, N_v, N_c, n_c_unit, beta_parameter, min_p = 1e-1
     return Id
 
 def exp_prob_beta_gamma(dt, beta, g_leak, gamma, t_ref):
+    '''Returns a function that calculates the probability of a spike given the membrane potential V.'''
     def func(V):
         return np.random.rand( len(V) ) < (1-np.exp(-np.exp(V*beta*g_leak+np.log(gamma))*float(dt)))
     return func
@@ -263,27 +264,6 @@ def generate_prototypes(n_prototypes, p, length):
         prototypes[i] = generate_pattern(length, p)
     return prototypes
 
-def generate_prototype_variations(prototypes, n_per_prototype, percent_variation):
-    '''generates one array with variations of original prototypes by flipping a certain percentage of bits and one list with the indices of the original prototypes'''
-    n_prototypes, length = prototypes.shape
-    variations = np.zeros((n_prototypes*n_per_prototype, length))
-    original_prototypes = []
-    for i in range(n_prototypes):
-        for j in range(n_per_prototype):
-            variations[i*n_per_prototype+j] = prototypes[i] + np.random.binomial(1, percent_variation, length)
-            variations[i*n_per_prototype+j][variations[i*n_per_prototype+j] > 1] = 0
-            original_prototypes.append(i)
-    return variations, original_prototypes
-
-def average_cosine_similarity(data):
-    '''calculates the average cosine similarity of the data'''
-    n_samples, length = data.shape
-    similarity = 0
-    for i in range(n_samples):
-        for j in range(i+1, n_samples):
-            similarity += np.dot(data[i], data[j])/(np.linalg.norm(data[i])*np.linalg.norm(data[j]))
-    return similarity/(n_samples*(n_samples-1)/2)
-
 def train_test_split(data, labels, train_perccentage = 0.8, seed = 0):
     np.random.seed(seed)
     idx = np.arange(len(data))
@@ -297,23 +277,130 @@ def train_test_split(data, labels, train_perccentage = 0.8, seed = 0):
     test_labels = labels[train_idx:]
     return train_data, train_labels, test_data, test_labels
 
-def save_data(data, var_prot, repl_var, path = "data/"):
+def save_data(data, unique, path = "data/"):
     if not os.path.isdir(path):
         os.makedirs(path)
-    len_stimuli = len(data[0][0])
-    n_obs = len(data[0])
-    n_classes = len(np.unique(data[1]))
     array = np.array(data, dtype=object)
-    file_name = path + "data_" + str(n_classes) + "_" + str(var_prot) + "_" + str(repl_var) + "_" + str(len_stimuli) + "_" + str(n_obs)
+    file_name = path + "data_" + str(unique)
     np.save(file_name, array)
 
-def load_data(len_stimuli, n_obs, n_classes, var_prot, repl_var, path = "data/"):
-    file_name = path + "data_" + str(n_classes) + "_" + str(var_prot) + "_" + str(repl_var) + "_" + str(len_stimuli) + "_" + str(n_obs) + ".npy"
+def load_data(unique, path = "data/"):
+    file_name = path + "data_" + str(unique) + ".npy"
     try:
         data = np.load(file_name, allow_pickle=True)
         print("Data loaded from " +file_name)   
     except:
         print("File not found. Try again.")
         return None
-    
     return data
+
+def frequency_classification(spike_monitor, n_classes, n_neurons_per_class, t_ref=0.004, t_start=0.3, t_end=0.6, delay = 10, confidence = True):
+    '''Makes a classification based on the frequency of the spikes in the spike_monitor.'''
+
+    frequencies = np.array(spike_histogram(spike_monitor, np.asarray(t_start) * second + delay * np.asarray(t_ref) * second, np.asarray(t_end) * second)).T[1]
+    reshaped_frequencies = frequencies.reshape(n_classes, int(n_neurons_per_class))
+    if confidence:
+        from scipy.stats import kruskal
+        param_list = []
+        for i in range(reshaped_frequencies.shape[0]):
+            param_list.append(reshaped_frequencies[i])
+
+        krusk = kruskal(*param_list)
+        print("p-value: ", round(krusk[1], 3), ". Confidence: ", "High" if krusk[1] < 0.1 else "Low", sep='')
+
+    return np.argmax(np.sum(reshaped_frequencies, axis=1), axis=0)
+
+def create_timepoints(Ids, init_delay, delay, T):
+    '''Creates timepoints for the input patterns and sets them as global variables.'''
+    n_inputs = Ids.shape[0]
+    t_s = 0 * second + init_delay
+    t_e = 0 * second
+    initial_delay = init_delay
+    timepoints = []
+    time_points_dict = {}
+    for i in np.arange(n_inputs-1)+1:
+        t_s = t_e + delay + initial_delay
+        t_e = t_s + T
+        name_t_s = "T" + str(i) + "_s"
+        name_t_e = "T" + str(i) + "_e"
+        globals()[name_t_s] = t_s
+        globals()[name_t_e] = t_e
+        initial_delay = 0
+        timepoints.append(globals()[name_t_s])
+        timepoints.append(globals()[name_t_e])
+        time_points_dict[name_t_s] = t_s
+        time_points_dict[name_t_e] = t_e
+    sim_time = t_e
+    return (timepoints, sim_time, time_points_dict)
+
+# function to generate variations of prototypes with a certain percentage of flipped bits
+def generate_prototype_variations(prototypes, n_sub, percent_variation, inlcude_original=False):
+    '''function to generate variations of prototypes with a certain percentage of flipped bits. Is used to generate the finnegan data'''
+    k = 0
+    if inlcude_original:
+        k = 1
+    if len(prototypes) == 2:
+        prototypes, labels = prototypes
+        n_prototypes, length = prototypes.shape
+        variations = np.zeros((n_prototypes*n_sub, length))
+        original_prototypes = []
+        for i in range(n_prototypes):
+            for j in range(n_sub):
+                variations[i*n_sub+j] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
+                if i*n_sub+j == 505:
+                    print(i, j)
+                original_prototypes.append(labels[i])
+    else:
+        n_prototypes, length = prototypes.shape
+        variations = np.zeros((n_prototypes*(n_sub+k), length))
+        original_prototypes = []
+        for i in range(n_prototypes):
+            if inlcude_original:
+                variations[i*n_sub] = prototypes[i]
+                original_prototypes.append(i)
+            for j in range(n_sub):
+                variations[i*n_sub+j+k] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
+                original_prototypes.append(i)
+    return variations, original_prototypes
+
+
+def average_activation_degree(x, y, percent = True):
+    '''Calculates the average activation degree of two patterns. If percent = True, returns the percentage of active neurons in the pattern.'''
+    if len(x.shape) == 1:
+        activation = (np.count_nonzero(x)+np.count_nonzero(y))/2
+        len_pattern = x.shape[0]
+    else:
+        activation = (np.count_nonzero(x)/x.shape[0]+np.count_nonzero(y)/y.shape[0])/2
+        len_pattern = x.shape[1]
+    if percent: 
+        return activation/len_pattern
+    
+def generate_overlapping_pattern(x, percent_overlap):
+    '''Generates overlapping patterns as described in Kim et al. 2023.'''
+    # get indices of active neurons in x
+    idx_1 = np.where(x == 1)[0]
+    idx_0 = np.where(x == 0)[0]
+    num_overlap = int(len(idx_1)*percent_overlap)
+
+    overlapping = np.random.choice(idx_1, num_overlap, replace=False)
+    new = np.random.choice(idx_0, len(idx_1) - num_overlap, replace=False)
+
+    out = np.zeros(len(x))
+    out[overlapping] = 1
+    out[new] = 1
+    return out
+
+def generate_data_kim(num_samples, len_pattern, percent_active = 0.1):
+    '''Creates data with 10 different levels of overlap between patterns. [i,0,:] = original pattern, [i,j,:] = pattern with j/10 overlap
+    The procedure is taken from the descriptions of Kim et al. 2023'''
+    patterns = np.zeros((num_samples, 10, len_pattern))
+    for i in range(num_samples):
+        x = generate_pattern(len_pattern, perc_active = percent_active)
+        patterns[i,0,:] = x
+        for j in np.arange(9)+1:
+            patterns[i,j,:] = generate_overlapping_pattern(x, round((j/10), 1))
+    return patterns
+
+
+def cosine_similarity(x, y):
+    return np.dot(x, y)/(np.linalg.norm(x)*np.linalg.norm(y))

@@ -1,46 +1,32 @@
 import numpy as np
 from brian2 import *
 from tools.functions import *
-from tools.parameters_main import *
+from tools.parameters_main_experimental import *
 import matplotlib.pyplot as plt
 
-def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None):
+def main(Whv, b_v, b_c, b_h, Id, t_sim = t_sim, dorun = True, monitors=True, mnist_data = None, n_classes = 10):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
     netobjs = []
     #------------------------------------------ Neuron Groups
-    print("Creating equation")
     
-    """ eqs_v = Equations(eqs_str_lif_wnrd, 
-            Cm = cm,
-            I_inj = i_inj,
-            g = g_leak,
-            sigma = sigma,
-            tau_rec = tau_rec)
-
-    eqs_h = Equations(eqs_str_lif_wnr, 
-            Cm = cm,
-            I_inj = i_inj,
-            g = g_leak,
-            sigma = sigma,
-            tau_rec = tau_rec) """
-    
-    print("Creating Population")
     neuron_group_rvisible = NeuronGroup(\
             N_v+N_c,
             model = eqs_str_lif_wnrd, # changed from eqs_v to eqs_str_lif_wnrd
             threshold = 'v>theta',  # removed *volt
             refractory = t_ref,
-            reset = "v = 0*volt"    # changed to string
+            reset = "v = 0*volt",    # changed to string
+            method = method
             )
-    
+
     neuron_group_rhidden = NeuronGroup(\
             N_h,
             model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
             threshold = 'v>theta',  # removed *volt
             refractory = t_ref,
-            reset = "v = 0*volt"    # changed to string
+            reset = "v = 0*volt",    # changed to string
+            method = method
             )
 
 
@@ -61,8 +47,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     
     #---------------------- Initialize State Variables
     neuron_group_rvisible.I_d = 0. * amp
-    
-    
+    neuron_group_rvisible.age = age_v
+    neuron_group_rhidden.age = age_h
+
+
     #---------------------- Connections and Synapses
     #Bias units    
     Sbv = Synapses(Bv, neuron_group_rvisible, 
@@ -85,7 +73,9 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
                         Apost = Apost*exp((lastupdate-t)/tau_learn)
                         Apost += deltaAbias
                         w=w+g*Apre
-                        lastupdate = t''' 
+                        lastupdate = t
+                        ''', 
+                   method = method
                         )
     Sbv.connect(j='i')
     Sbv.w[:] = np.concatenate([b_v,b_c])/beta_parameter/bias_input_rate/tau_rec
@@ -112,7 +102,8 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
                         Apost+=deltaAbias
                         w=w+g*Apre
                         lastupdate = t
-                        ''' 
+                        ''', 
+                   method = method
                         )
     Sbh.connect(j='i')
     Sbh.w[:] = b_h[:]/beta_parameter/bias_input_rate/tau_rec
@@ -140,7 +131,8 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
                         I_rec_pre += w * amp
                         w = w + g * Apre
                         lastupdate = t
-                        ''' 
+                        ''', 
+                   method = method
                         )
     Srs.connect()
     netobjs+=[Sbv,Sbh,Srs]
@@ -153,13 +145,18 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     mod = 100
     ev = Clock(period/mod)
     ev.add_attribute(name = "n")
+    ev.add_attribute(name = "cycle")
     ev.add_attribute(name = "tmod")
     ev.add_attribute(name = "mod")
     ev.add_attribute(name = "period")
     ev.n = 0
+    ev.cycle = 0
     ev.tmod = 0
     ev.mod = mod
     ev.period = period  
+
+    timepoint = []
+    growth_factor_list = []
         
     # Each epoch consists of a LTP phase during which the data is presented (construction), 
     # followed by a free- running LTD phase (reconstruction). The weights are updated asynchronously 
@@ -167,7 +164,11 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
 
     @network_operation(clock = ev)
     def g_update(when='after'):
-        tmod, n = custom_step(ev)
+        tmod, n = custom_step(ev, sim_time)
+        timepoint.append(ev.cycle)
+        growth_factor = gomperz_function((ev.cycle*2-1), steepness)
+        growth_factor_list.append(growth_factor)
+
         if tmod < 50:   # while below 50 cycles, clamp data to visible units. Otherwise input current = 0 below 50 is data phase, above 50 is reconstruction phase
             neuron_group_rvisible.I_d = Id[n] * amp
         else:
@@ -200,6 +201,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
             Sbv.Apost=0
             Sbh.Apre=0
             Sbh.Apost=0
+        
+        neuron_group_rvisible.age = age_v
+
+        
 
     netobjs += [g_update]
     
@@ -217,10 +222,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
         W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta_parameter
         Wvh=W[:N_v,:]
         Wch=W[N_v:,:] 
-        accuracy_test = classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit)[0]    
+        accuracy_test = classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit, n_classes=n_classes)[0]    
         res_hist_test.append(accuracy_test)
         
-        accuracy_train = classification_free_energy(Wvh, Wch, b_h, b_c, train_data, train_labels, n_c_unit)[0]
+        accuracy_train = classification_free_energy(Wvh, Wch, b_h, b_c, train_data, train_labels, n_c_unit, n_classes=n_classes)[0]
         res_hist_train.append(accuracy_train)
 
         print("Train accuracy:", accuracy_train)
@@ -232,7 +237,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     if monitors:
         Mh=SpikeMonitor(neuron_group_rhidden)
         Mv=SpikeMonitor(neuron_group_rvisible)
-        netobjs += [Mh, Mv]
+        Mv=SpikeMonitor(neuron_group_rvisible[:N_v])
+        Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
+        Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
+        netobjs += [Mh, Mv, Mc, Mvmem]
 
     net = Network(netobjs)
     if dorun:
