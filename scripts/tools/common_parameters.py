@@ -1,5 +1,5 @@
 n_classes = 5                          # number of classes
-N_v = N_inputs = 100                     # number of input neurons
+N_v = N_inputs = 200                     # number of input neurons
 N_c = N_class = 20                      # number of class neurons
 N_h = N_hidden = 50                     # number of hidden neurons
 

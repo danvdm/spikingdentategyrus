@@ -1,10 +1,10 @@
 import numpy as np
 from brian2 import *
 from tools.functions import *
-from tools.parameters_main_experimental import *
+from tools.parameters_main import *
 import matplotlib.pyplot as plt
 
-def main(Whv, b_v, b_c, b_h, Id, t_sim = t_sim, dorun = True, monitors=True, mnist_data = None, n_classes = 10):
+def main(Whv, b_v, b_c, b_h, Id, t_sim = t_sim, dorun = True, monitors=True, mnist_data = None, performance_metrics = True, n_classes = 10):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
@@ -31,14 +31,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim = t_sim, dorun = True, monitors=True, mni
 
 
     netobjs += [neuron_group_rvisible, neuron_group_rhidden]
-    
-    #--------------------------- Custom Network Operations
-#   @network_operation(clock = defaultclock)
-#   def update_mpot(when='after'):
-#       neuron_group_rvisible.v[neuron_group_rvisible.v<=0.0*volt]=0.0*volt
-#       neuron_group_rhidden.v[neuron_group_rhidden.v<=0.0*volt]=0.0*volt
-#   netobjs.append(update_mpot)   
-    
+      
     #Bias group
     Bv = PoissonGroup(N_v+N_c, rates = bias_input_rate)     #Noise injection to v
     Bh = PoissonGroup(N_h, rates = bias_input_rate)         #Noise injection to h
@@ -208,30 +201,31 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim = t_sim, dorun = True, monitors=True, mni
 
     netobjs += [g_update]
     
-    iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = mnist_data
-    res_hist_test=[]
-    res_hist_train=[]
-    test_data = test_iv
-    test_labels = test_iv_l
-    train_data = train_iv[:200]
-    train_labels = train_iv_l[:200]
-    plot_every = 10
+    if performance_metrics:
+        iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = mnist_data
+        res_hist_test=[]
+        res_hist_train=[]
+        test_data = test_iv
+        test_labels = test_iv_l
+        train_data = train_iv[:200]
+        train_labels = train_iv_l[:200]
+        plot_every = 10
 
-    @network_operation(clock=Clock(dt=plot_every*dcmt*t_ref))
-    def plot_performance(when='after'):   
-        W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta_parameter
-        Wvh=W[:N_v,:]
-        Wch=W[N_v:,:] 
-        accuracy_test = classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit, n_classes=n_classes)[0]    
-        res_hist_test.append(accuracy_test)
-        
-        accuracy_train = classification_free_energy(Wvh, Wch, b_h, b_c, train_data, train_labels, n_c_unit, n_classes=n_classes)[0]
-        res_hist_train.append(accuracy_train)
+        @network_operation(clock=Clock(dt=plot_every*dcmt*t_ref))
+        def plot_performance(when='after'):   
+            W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta_parameter
+            Wvh=W[:N_v,:]
+            Wch=W[N_v:,:] 
+            accuracy_test = classification_free_energy(Wvh, Wch, b_h, b_c, test_data, test_labels, n_c_unit, n_classes=n_classes)[0]    
+            res_hist_test.append(accuracy_test)
+            
+            accuracy_train = classification_free_energy(Wvh, Wch, b_h, b_c, train_data, train_labels, n_c_unit, n_classes=n_classes)[0]
+            res_hist_train.append(accuracy_train)
 
-        print("Train accuracy:", accuracy_train)
-        print("Test accuracy:", accuracy_test)
+            print("Train accuracy:", accuracy_train)
+            print("Test accuracy:", accuracy_test)
 
-    netobjs += [plot_performance]
+        netobjs += [plot_performance]
     
     #--------------------------- Monitors
     if monitors:

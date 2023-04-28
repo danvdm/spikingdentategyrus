@@ -285,7 +285,7 @@ def save_data(data, unique, path = "data/"):
     np.save(file_name, array)
 
 def load_data(unique, path = "data/"):
-    file_name = path + "data_" + str(unique) + ".npy"
+    file_name = path + str(unique) + ".npy"
     try:
         data = np.load(file_name, allow_pickle=True)
         print("Data loaded from " +file_name)   
