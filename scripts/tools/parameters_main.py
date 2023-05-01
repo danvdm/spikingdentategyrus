@@ -5,7 +5,7 @@ from tools.functions import *
 
 dcmt = 35                               # duty cyle in multiples of t_ref
 
-sim_time = 400
+#sim_time = 2 # originally 300
 
 steepness = 5.0
 perc_vis = 1
@@ -18,7 +18,7 @@ method = "euler"          # integration method for differential equations
 
 #----------------------------------------- Neuron parameters
 t_ref = 0.004 * second                  # refractory period 
-t_sim = dcmt*t_ref*sim_time                  # simulation time - originally 10000
+#t_sim = dcmt*t_ref*sim_time                  # simulation time - originally 10000
 bias_input_rate = 1000. * Hz            # Mean firing rate of bias Poisson spike train
 beta_parameter = 2.04371561e+09 # * 1/amp 
 gamma = np.exp(9.08343441e+00)* Hz      # Baseline firing rate
@@ -30,8 +30,8 @@ beta_fi = 1./cm/theta                   # beta for F-I curve  ??
 sigma = 1.e-9                           # noise amplitude - This is now used in the queation creations instead of wnsigma --> not sure what it originally was for...
 cal_i_lk = 0.0e-10                      # leak current
 g_leak = 1e-9 * siemens                 # leak conductance
-# dt = 0.00005 * second                 # time step --> Not necessary anymore ?!?!?!
-n_samples = ceil(t_sim/(dcmt*t_ref)+1)  # number of samples
+#dt = 0.00005 * second                 # time step --> Not necessary anymore ?!?!?!
+# n_samples = ceil(t_sim/(dcmt*t_ref)+1)  # number of samples
 wnsigma = 4.24e-11 * amp / second**-0.5 # This the reason why its slow. old: 4.24e-11
 
 t_burn_percent = 10.                    # percentage of burn-in time

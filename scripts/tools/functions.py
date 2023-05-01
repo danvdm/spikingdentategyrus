@@ -85,7 +85,7 @@ def create_pId(iv_seq, iv_l_seq, N_v, N_c, n_c_unit, min_p = .00001, max_p = .95
     Id = np.ones([iv_seq.shape[0], iv_seq.shape[1]+N_c])*min_p
     
     for i in range(iv_seq.shape[0]):
-        cl = np.zeros(N_c)
+        cl = np.zeros(N_c) 
         cl[int(iv_l_seq[i]*n_c_unit):int((iv_l_seq[i]+1)*n_c_unit)] = max_p
         Id[i,N_v:] = clamped_input_transform(cl, min_p = min_p, max_p = max_p)
         Id[i,:N_v] = clamped_input_transform(iv_seq[i,:], min_p = min_p, max_p = max_p)
@@ -312,55 +312,37 @@ def frequency_classification(spike_monitor, n_classes, n_neurons_per_class, t_re
 
 def create_timepoints(Ids, init_delay, delay, T):
     '''Creates timepoints for the input patterns and sets them as global variables.'''
-    n_inputs = Ids.shape[0]
+    n_inputs = Ids.shape[0]-1
     t_s = 0 * second + init_delay
     t_e = 0 * second
     initial_delay = init_delay
     timepoints = []
     time_points_dict = {}
-    for i in np.arange(n_inputs-1)+1:
+    for i in np.arange(n_inputs)+1:
         t_s = t_e + delay + initial_delay
         t_e = t_s + T
         name_t_s = "T" + str(i) + "_s"
         name_t_e = "T" + str(i) + "_e"
-        globals()[name_t_s] = t_s
-        globals()[name_t_e] = t_e
+        #globals()[name_t_s] = t_s
+        #globals()[name_t_e] = t_e
         initial_delay = 0
-        timepoints.append(globals()[name_t_s])
-        timepoints.append(globals()[name_t_e])
+        #timepoints.append(globals()[name_t_s])
+        #timepoints.append(globals()[name_t_e])
         time_points_dict[name_t_s] = t_s
         time_points_dict[name_t_e] = t_e
     sim_time = t_e
     return (timepoints, sim_time, time_points_dict)
 
 # function to generate variations of prototypes with a certain percentage of flipped bits
-def generate_prototype_variations(prototypes, n_sub, percent_variation, inlcude_original=False):
+def generate_prototype_variations(prototypes, n_sub, percent_variation):
     '''function to generate variations of prototypes with a certain percentage of flipped bits. Is used to generate the finnegan data'''
-    k = 0
-    if inlcude_original:
-        k = 1
-    if len(prototypes) == 2:
-        prototypes, labels = prototypes
-        n_prototypes, length = prototypes.shape
-        variations = np.zeros((n_prototypes*n_sub, length))
-        original_prototypes = []
-        for i in range(n_prototypes):
-            for j in range(n_sub):
-                variations[i*n_sub+j] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
-                if i*n_sub+j == 505:
-                    print(i, j)
-                original_prototypes.append(labels[i])
-    else:
-        n_prototypes, length = prototypes.shape
-        variations = np.zeros((n_prototypes*(n_sub+k), length))
-        original_prototypes = []
-        for i in range(n_prototypes):
-            if inlcude_original:
-                variations[i*n_sub] = prototypes[i]
-                original_prototypes.append(i)
-            for j in range(n_sub):
-                variations[i*n_sub+j+k] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
-                original_prototypes.append(i)
+    n_prototypes, length = prototypes.shape
+    variations = np.zeros((n_prototypes*(n_sub), length))
+    original_prototypes = []
+    for i in range(n_prototypes):
+        for j in range(n_sub):
+            variations[i*n_sub+j] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
+            original_prototypes.append(i*10+j)
     return variations, original_prototypes
 
 
@@ -404,3 +386,123 @@ def generate_data_kim(num_samples, len_pattern, percent_active = 0.1):
 
 def cosine_similarity(x, y):
     return np.dot(x, y)/(np.linalg.norm(x)*np.linalg.norm(y))
+
+def create_Id_pattern(n, data, N_v, N_c, n_c_unit, beta_parameter, on_off_ratio, seed = 0, data_mult = 1, class_mult = 0, allowed_labels = None):
+    np.random.seed(seed)
+    Ids = [create_single_Id(0, data, N_v = N_v, N_c = N_c, n_c_unit = n_c_unit, 
+                    beta_parameter = beta_parameter, 
+                    mult_class = 0.0, mult_data = 0.0, 
+                    min_p = 1e-4, max_p = .95)]
+    labels_out = []
+    if allowed_labels is None:
+        labels = np.unique(data[1])
+    else:
+        labels = allowed_labels
+    for i in range(n):
+        label = np.random.choice(labels, 1)[0]
+        Ids.append(create_single_Id(label, data, N_v = N_v, N_c = N_c, n_c_unit = n_c_unit, 
+                    beta_parameter = beta_parameter, 
+                    mult_class = class_mult, mult_data = data_mult, 
+                    min_p = 1e-4, max_p = .95))
+        labels_out.append(label)
+        for j in range(on_off_ratio):
+            Ids.append(create_single_Id(0, data, N_v = N_v, N_c = N_c, n_c_unit = n_c_unit, 
+                    beta_parameter = beta_parameter, 
+                    mult_class = 0.0, mult_data = 0.0, 
+                    min_p = 1e-4, max_p = .95))
+            labels_out.append(label)
+    return (np.column_stack(Ids).T, labels_out)
+
+def calculate_hamming_distance(x, y):
+    return np.sum(np.abs(x-y))
+
+def calculate_percent_match(a, b):
+    return 1 - calculate_hamming_distance(a, b) / len(a)
+
+def generate_final_variations(prototype_variations, n_per_subclass, flip_second_round):
+    prototypes, labels = prototype_variations
+    n_prototypes, length = prototypes.shape
+    variations = np.zeros((n_prototypes, n_per_subclass, length))
+    original_prototypes = []
+    for i in range(n_prototypes):
+        for j in range(n_per_subclass):
+            variations[i, j] = np.abs(prototypes[i] - generate_pattern(length, flip_second_round))
+            original_prototypes.append(labels[i])
+    return variations, original_prototypes
+
+def train_test_split_finnegan(data_finnegan, split):
+    """
+    Splits the data into training and test data.
+    """
+    data_train = np.zeros((len(data_finnegan[0]), int(split*len(data_finnegan[0][0])), len(data_finnegan[0][0][0])))
+    data_test = np.zeros((len(data_finnegan[0]), len(data_finnegan[0][0])-int(split*len(data_finnegan[0][0])), len(data_finnegan[0][0][0])))
+    for i in range(len(data_finnegan[0])):
+        data_train[i] = data_finnegan[0][i][:int(split*len(data_finnegan[0][i]))]
+        data_test[i] = data_finnegan[0][i][int(split*len(data_finnegan[0][i])):]
+    return data_train, data_test
+
+def create_test_Id(test_data, off_time):
+    Id = clamped_input_transform(test_data[0], min_p = 1e-4, max_p = .95)
+    for h in range(off_time):
+            Id = np.row_stack((Id, np.zeros((test_data.shape[1]))))
+    for i in np.arange(test_data.shape[0]-1)+1:
+        Id = np.row_stack((Id, clamped_input_transform(test_data[i], min_p = 1e-4, max_p = .95)))
+        for j in range(off_time):
+            Id = np.row_stack((Id, np.zeros((test_data.shape[1]))))
+    return Id
+
+def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1):
+    hamming_distances = []
+    percent_match_list = []
+    originals = []
+    recovereds = []
+    for i in test_show_times:
+        t_start_stimulus = time_points_dict["T"+ str(i)+"_s"]
+        t_stop_stimulus = time_points_dict["T"+ str(i)+"_e"]
+        t_start_recover = time_points_dict["T"+ str(i+1)+"_s"]
+        t_stop_recover = time_points_dict["T"+ str(i+off_time)+"_e"]
+        orig = spike_histogram(spike_monitor, t_start=t_start_stimulus, t_stop=t_stop_stimulus).T[1]
+        recover = spike_histogram(spike_monitor, t_start=t_start_recover, t_stop=t_stop_recover).T[1]
+        hamming_distances.append(calculate_hamming_distance(orig, recover))
+        percent_match_list.append(calculate_percent_match(orig, recover))
+        originals.append(orig)
+        recovereds.append(recover)
+    return hamming_distances, percent_match_list, originals, recovereds
+
+def create_finnegan_Ids(train_test_data_finnegan, off_time = 1, n_per_prototype = 10, n_main_classes = 5):
+    # n_per_prototype is the value that should not be above 11 in the parameters file
+
+    num_prototypes = len(train_test_data_finnegan[0])
+    n_per_prototype_train = len(train_test_data_finnegan[0][0])
+    n_per_prototype_test = len(train_test_data_finnegan[1][0])
+    num_vis = len(train_test_data_finnegan[0][0][0])
+
+    lenght_out = n_per_prototype_train * num_prototypes + (n_per_prototype_test + off_time * n_per_prototype_test) * num_prototypes 
+
+    time_total = np.arange(1, lenght_out+1, 1)
+    time_train = np.arange(1, n_per_prototype_train * n_main_classes+1, 1)
+    time_test = np.arange(1, (n_per_prototype_test + off_time * n_per_prototype_test ) * n_main_classes+1, 1)
+    
+    time_train_total = time_train
+
+    batch_idx = np.arange(0, num_prototypes, n_per_prototype)
+    batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx])[np.random.choice(np.arange(0, np.concatenate(first_batch_train).shape[0]), np.concatenate(first_batch_train).shape[0], replace=False)]
+    batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx])
+    Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
+    Ids_test = create_test_Id(batch_test, off_time=off_time)
+    Ids = np.row_stack((np.zeros(num_vis), Ids_train, Ids_test))
+    for i in np.arange(n_per_prototype-1)+1:
+        batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx+i])[np.random.choice(np.arange(0, np.concatenate(first_batch_train).shape[0]), np.concatenate(first_batch_train).shape[0], replace=False)]
+        batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx+i])
+        Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
+        Ids_test = create_test_Id(batch_test, off_time=off_time)
+        Ids = np.row_stack((Ids, Ids_train, Ids_test))
+
+        time_train_total = np.append(time_train_total, time_train + time_train_total[-1] + time_test[-1])
+
+    time_test_total = np.setdiff1d(time_total, time_train_total)
+
+    time_test_on = time_test_total[::off_time+1]
+    time_test_off = np.setdiff1d(time_test_total, time_test_on)
+
+    return Ids, time_test_on, time_test_off

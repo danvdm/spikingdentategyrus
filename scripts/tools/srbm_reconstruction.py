@@ -5,21 +5,9 @@ from tools.parameters_reconstruction import *
 import matplotlib.pyplot as plt
 
 def main(Whv, b_v, b_c, b_h, Id, t_sim, dorun = True, monitors=True, display=False, mnist_data = None):
+   
     start_scope()
-    b_init = np.concatenate([b_v, b_c, b_h])
     netobjs = []
-
-    Wh = Whv[:(N_v),:]
-    b1 = (sigm(b_v)).mean() #0.47174785699167904
-    b2 = (sigm(b_h)).mean() #0.55992711057515843
-    Th = Bu * wb
-    A = -np.log((-1+1./(t_ref*Bu))*gamma*t_ref)
-    wmean = np.mean(Wh)#-0.023632872766664939
-    wh = (A - wmean*b1 - b_h.mean())/Th
-    wv = (A - wmean*b2 - b_v.mean())/Th
-    N_helper = 25
-    i_inj_v_helper =  Th/beta_fi
-    i_inj_h_helper =  Th/beta_fi
 
     #------------------------------------------ Neuron Groups
     print("Creating equation")
@@ -54,9 +42,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, dorun = True, monitors=True, display=Fal
             reset = "v = 0*volt"
             )
 
-    netobjs += [neuron_group_rvisible, neuron_group_rhidden, 
-                #neuron_group_rvisible_helper, neuron_group_rhidden_helper # helper
-                ]
+    netobjs += [neuron_group_rvisible, neuron_group_rhidden]
    
     
     #Bias group
@@ -193,11 +179,6 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, dorun = True, monitors=True, display=Fal
 #            Sbh.Afost=0
 
     netobjs += [g_update]
-        
-    w_hist_v = []
-    w_hist_c = []
-    b_hist_vc = []
-    b_hist_h = []
     
     if display:
         iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = mnist_data
@@ -232,9 +213,11 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, dorun = True, monitors=True, display=Fal
         Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
         Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
         netobjs += [Mh, Mv, Mc, Mvmem]
-    #MId = StateMonitor(neuron_group_rvisible, varname='I_d', record=True)
-    #MIt = StateMonitor(Sbh,varname='g',record=[0])
+
+
     net = Network(netobjs)
+
+
     if dorun:
         import time
         tic = time.time()      

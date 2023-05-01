@@ -4,7 +4,7 @@ from tools.functions import *
 import matplotlib.pyplot as plt
 from tools.parameters_main import *
 
-def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10):
+def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, mnist_data = None, performance_metrics = True, n_classes = 10):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
@@ -201,7 +201,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
 
     netobjs += [g_update]
     
-    if display:
+    if performance_metrics:
         iv_seq, iv_l_seq, train_iv, train_iv_l, test_iv, test_iv_l = mnist_data
         res_hist_test=[]
         res_hist_train=[]
@@ -232,16 +232,9 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
         Mh=SpikeMonitor(neuron_group_rhidden)
         Mv=SpikeMonitor(neuron_group_rvisible)
         Mv=SpikeMonitor(neuron_group_rvisible[:N_v])
-        if N_c > 0:
-            Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
-            Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
-            netobjs += [Mh, Mv, Mc, Mvmem]
-        else: 
-            Mc = None
-            Mvmem = None
-            netobjs += [Mh, Mv]
-        
-        
+        Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
+        Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
+        netobjs += [Mh, Mv, Mc, Mvmem]
 
     net = Network(netobjs)
     if dorun:
