@@ -486,13 +486,13 @@ def create_finnegan_Ids(train_test_data_finnegan, off_time = 1, n_per_prototype 
     time_train_total = time_train
 
     batch_idx = np.arange(0, num_prototypes, n_per_prototype)
-    batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx])[np.random.choice(np.arange(0, np.concatenate(first_batch_train).shape[0]), np.concatenate(first_batch_train).shape[0], replace=False)]
+    batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx])[np.random.choice(np.arange(0, n_per_prototype_train*n_main_classes), n_per_prototype_train*n_main_classes, replace=False)]
     batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx])
     Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
     Ids_test = create_test_Id(batch_test, off_time=off_time)
     Ids = np.row_stack((np.zeros(num_vis), Ids_train, Ids_test))
     for i in np.arange(n_per_prototype-1)+1:
-        batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx+i])[np.random.choice(np.arange(0, np.concatenate(first_batch_train).shape[0]), np.concatenate(first_batch_train).shape[0], replace=False)]
+        batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx+i])[np.random.choice(np.arange(0, n_per_prototype_train*n_main_classes), n_per_prototype_train*n_main_classes, replace=False)]
         batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx+i])
         Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
         Ids_test = create_test_Id(batch_test, off_time=off_time)
