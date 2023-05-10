@@ -212,7 +212,7 @@ def custom_step(clock_object, sim_time):
     tmod_now, n_now = clock_object.tmod, clock_object.n
     clock_object.tmod = np.mod(clock_object.tmod+1, clock_object.mod)
     clock_object.n = int(clock_object.t/(clock_object.period))
-    clock_object.cycle += 1 / (sim_time * 100)
+    clock_object.cycle += (1 / (sim_time * 100)) 
     return tmod_now, n_now
 
 def gomperz_function(x, steepness):
@@ -224,7 +224,10 @@ def spike_histogram(spike_monitor, t_start, t_stop):
     '''
     import numpy as np
     delta_t = t_stop - t_start
-    k, v = zip(*spike_monitor.spike_trains().items())   
+    if isinstance(spike_monitor, dict):
+        k, v = (spike_monitor["k"], spike_monitor["v"])
+    else: 
+        k, v = zip(*spike_monitor.spike_trains().items())   
     def f(s):
         idx_low = s >= t_start
         idx_high = s < t_stop
@@ -277,17 +280,19 @@ def train_test_split(data, labels, train_perccentage = 0.8, seed = 0):
     test_labels = labels[train_idx:]
     return train_data, train_labels, test_data, test_labels
 
-def save_data(data, unique, path = "data/"):
+def save_data(data, unique, path = "data/", dtype = "object"):
+    import pickle
     if not os.path.isdir(path):
         os.makedirs(path)
-    array = np.array(data, dtype=object)
-    file_name = path + "data_" + str(unique)
-    np.save(file_name, array)
+    file_name = path + "data_" + str(unique)+".pkl"
+    pickle.dump(data, open(file_name,"wb"))
+
 
 def load_data(unique, path = "data/"):
-    file_name = path + str(unique) + ".npy"
+    import pickle
+    file_name = path + str(unique) + ".pkl"
     try:
-        data = np.load(file_name, allow_pickle=True)
+        data = pickle.load(open(file_name, "rb"))
         print("Data loaded from " +file_name)   
     except:
         print("File not found. Try again.")
@@ -323,11 +328,11 @@ def create_timepoints(Ids, init_delay, delay, T):
         t_e = t_s + T
         name_t_s = "T" + str(i) + "_s"
         name_t_e = "T" + str(i) + "_e"
-        #globals()[name_t_s] = t_s
-        #globals()[name_t_e] = t_e
+        globals()[name_t_s] = t_s
+        globals()[name_t_e] = t_e
         initial_delay = 0
-        #timepoints.append(globals()[name_t_s])
-        #timepoints.append(globals()[name_t_e])
+        timepoints.append(globals()[name_t_s])
+        timepoints.append(globals()[name_t_e])
         time_points_dict[name_t_s] = t_s
         time_points_dict[name_t_e] = t_e
     sim_time = t_e
@@ -376,12 +381,15 @@ def generate_data_kim(num_samples, len_pattern, percent_active = 0.1):
     '''Creates data with 10 different levels of overlap between patterns. [i,0,:] = original pattern, [i,j,:] = pattern with j/10 overlap
     The procedure is taken from the descriptions of Kim et al. 2023'''
     patterns = np.zeros((num_samples, 10, len_pattern))
+    labels = np.zeros((num_samples, 10, 2))
     for i in range(num_samples):
         x = generate_pattern(len_pattern, perc_active = percent_active)
         patterns[i,0,:] = x
+        labels[i, 0, :] = np.array([i, 0])
         for j in np.arange(9)+1:
-            patterns[i,j,:] = generate_overlapping_pattern(x, round((j/10), 1))
-    return patterns
+            patterns[i, j,:] = generate_overlapping_pattern(x, round((j/10), 1))
+            labels[i, j, :] = np.array([i, j])
+    return patterns, labels
 
 
 def cosine_similarity(x, y):
@@ -451,7 +459,7 @@ def create_test_Id(test_data, off_time):
             Id = np.row_stack((Id, np.zeros((test_data.shape[1]))))
     return Id
 
-def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1):
+def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1, binarize = False, threshold = 10):
     hamming_distances = []
     percent_match_list = []
     originals = []
@@ -463,6 +471,9 @@ def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off
         t_stop_recover = time_points_dict["T"+ str(i+off_time)+"_e"]
         orig = spike_histogram(spike_monitor, t_start=t_start_stimulus, t_stop=t_stop_stimulus).T[1]
         recover = spike_histogram(spike_monitor, t_start=t_start_recover, t_stop=t_stop_recover).T[1]
+        if binarize:
+            orig = np.where(orig > threshold, 1, 0)
+            recover = np.where(recover > threshold, 1, 0)
         hamming_distances.append(calculate_hamming_distance(orig, recover))
         percent_match_list.append(calculate_percent_match(orig, recover))
         originals.append(orig)
@@ -470,16 +481,16 @@ def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off
     return hamming_distances, percent_match_list, originals, recovereds
 
 def create_finnegan_Ids(train_test_data_finnegan, off_time = 1, n_per_prototype = 10, n_main_classes = 5):
-    # n_per_prototype is the value that should not be above 11 in the parameters file
+    # n_per_prototype is the value that should not be above 10 in the parameters file
 
     num_prototypes = len(train_test_data_finnegan[0])
     n_per_prototype_train = len(train_test_data_finnegan[0][0])
     n_per_prototype_test = len(train_test_data_finnegan[1][0])
     num_vis = len(train_test_data_finnegan[0][0][0])
 
-    lenght_out = n_per_prototype_train * num_prototypes + (n_per_prototype_test + off_time * n_per_prototype_test) * num_prototypes 
+    lenght_out = n_per_prototype_train * num_prototypes + 2 * ((n_per_prototype_test + off_time * n_per_prototype_test) * num_prototypes) # get the length of the output
 
-    time_total = np.arange(1, lenght_out+1, 1)
+    time_total = np.arange(1, lenght_out+1, 1) 
     time_train = np.arange(1, n_per_prototype_train * n_main_classes+1, 1)
     time_test = np.arange(1, (n_per_prototype_test + off_time * n_per_prototype_test ) * n_main_classes+1, 1)
     
@@ -490,19 +501,48 @@ def create_finnegan_Ids(train_test_data_finnegan, off_time = 1, n_per_prototype 
     batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx])
     Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
     Ids_test = create_test_Id(batch_test, off_time=off_time)
+    ids_test_final = Ids_test
     Ids = np.row_stack((np.zeros(num_vis), Ids_train, Ids_test))
     for i in np.arange(n_per_prototype-1)+1:
         batch_train = np.concatenate(train_test_data_finnegan[0][batch_idx+i])[np.random.choice(np.arange(0, n_per_prototype_train*n_main_classes), n_per_prototype_train*n_main_classes, replace=False)]
         batch_test =  np.concatenate(train_test_data_finnegan[1][batch_idx+i])
         Ids_train = clamped_input_transform(batch_train, min_p = 1e-4, max_p = .95)
         Ids_test = create_test_Id(batch_test, off_time=off_time)
+        ids_test_final = np.row_stack((ids_test_final, Ids_test))
         Ids = np.row_stack((Ids, Ids_train, Ids_test))
 
         time_train_total = np.append(time_train_total, time_train + time_train_total[-1] + time_test[-1])
 
+    Ids = np.row_stack((Ids, ids_test_final))
     time_test_total = np.setdiff1d(time_total, time_train_total)
 
     time_test_on = time_test_total[::off_time+1]
     time_test_off = np.setdiff1d(time_test_total, time_test_on)
 
     return Ids, time_test_on, time_test_off
+
+def orthogonalization_degree(x, y):
+    from scipy.stats import pearsonr
+    return((1-np.round(pearsonr(x, y)[0], 15))/2)
+
+def pattern_distance(ortho, av_act):
+    return(ortho/av_act)
+
+def pattern_separation_efficacy(input_1, input_2, output_1, output_2):
+    orthogonalization_input = orthogonalization_degree(input_1, input_2)
+    orthogonalization_output = orthogonalization_degree(output_1, output_2)
+    av_activ_input = average_activation_degree(input_1, input_2)
+    av_activ_output = average_activation_degree(output_1, output_2)
+    pattern_distance_input = pattern_distance(orthogonalization_input, av_activ_input)
+    pattern_distance_output = pattern_distance(orthogonalization_output, av_activ_output)
+    return(pattern_distance_output/pattern_distance_input)
+
+def load_output(unique = "output", date = "", path = "output/"):
+    import pickle
+    name = unique+date
+    with open(path+name+".pkl", 'rb') as handle:
+        output = pickle.load(handle)
+    return output
+
+def binarize(x, threshold):
+    return np.where(x > threshold, 1, 0)

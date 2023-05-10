@@ -3,8 +3,8 @@ from brian2 import *
 from tools.common_parameters import *
 from tools.functions import *
 
-dcmt = 35                               # duty cyle in multiples of t_ref
-
+dcmt = 20                               # duty cyle in multiples of t_ref
+generations = 2
 #sim_time = 2 # originally 300
 
 steepness = 5.0
@@ -12,7 +12,8 @@ perc_vis = 1
 perc_hid = 0.5
 age_v = np.concatenate((np.array(generate_pattern(N_v, perc_active = perc_vis)), np.repeat(1, N_c)))
 #age_h = np.array(generate_pattern(N_h, perc_active = perc_hid))
-age_h = np.random.uniform(-1, 1, N_h)
+age_h = np.random.uniform(-(generations+1), 1, N_h)
+
 
 method = "euler"          # integration method for differential equations
 

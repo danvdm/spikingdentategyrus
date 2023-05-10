@@ -14,4 +14,4 @@ data = generate_data_kim(number_of_patterns, length_v)
 plt.imshow(data[0,10:None:-1,:], cmap='gray') 
 plt.show """
 
-save_data(data, 'kim' + "_" + str(length_v) + "_" + str(number_of_patterns), path='scripts/data/')
+save_data(data, 'kim' + "_" + str(length_v) + "_" + str(number_of_patterns), path='scripts/data/', dtype='float32')

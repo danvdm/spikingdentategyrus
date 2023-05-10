@@ -4,11 +4,19 @@ from tools.functions import *
 import matplotlib.pyplot as plt
 from tools.parameters_main import *
 
-def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10):
+def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
     netobjs = []
+
+    if age_neurons:
+        age_h = np.random.uniform(-(generations+1), 1, N_h)
+        threshold_hidden = 'v>(exp(-exp(-2*age)) * 10 * theta)'
+    else: 
+        age_h = np.repeat(1, N_h)
+        threshold_hidden = 'v>theta'
+
     #------------------------------------------ Neuron Groups
     
     neuron_group_rvisible = NeuronGroup(\
@@ -23,7 +31,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     neuron_group_rhidden = NeuronGroup(\
             N_h,
             model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
-            threshold = 'v>theta',  # removed *volt
+            threshold = threshold_hidden,  # removed *volt
             refractory = t_ref,
             reset = "v = 0*volt",    # changed to string
             method = method
@@ -122,7 +130,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
                         Apost = Apost * exp((lastupdate-t)/tau_learn)
                         Apost += deltaA
                         I_rec_pre += w * amp
-                        w = w + g * Apre
+                        w = w + g * Apre 
                         lastupdate = t
                         ''', 
                    method = method
@@ -140,6 +148,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     ev.add_attribute(name = "n")
     ev.add_attribute(name = "cycle")
     ev.add_attribute(name = "tmod")
+    ev.add_attribute(name = "tmod_age")
     ev.add_attribute(name = "mod")
     ev.add_attribute(name = "period")
     ev.n = 0
@@ -147,6 +156,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     ev.tmod = 0
     ev.mod = mod
     ev.period = period  
+    ev.tmod_age = 0
 
     timepoint = []
     growth_factor_list = []
@@ -162,6 +172,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
         growth_factor = gomperz_function((ev.cycle*2-1), steepness)
         growth_factor_list.append(growth_factor)
 
+        neuron_group_rhidden.age += 1/ (sim_time * mod) * generations
+
         if tmod < 50:   # while below 50 cycles, clamp data to visible units. Otherwise input current = 0 below 50 is data phase, above 50 is reconstruction phase
             neuron_group_rvisible.I_d = Id[n] * amp
         else:
@@ -173,7 +185,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
 
         elif int(t_burn_percent)<=tmod<49: # if time is higher than burn in but lower than 50 cycles: g = 1, meaning 
             g_up = 1.
-            Srs.g = Sbv.g = Sbh.g =  g_up
+            Srs.g = Sbv.g = Sbh.g =  g_up 
             
         elif 49<=tmod < 50+int(t_burn_percent):
             Srs.g = Sbv.g = Sbh.g = +0.

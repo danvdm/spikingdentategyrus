@@ -10,7 +10,7 @@ method = "stepwise"             # method for generating the prototypes
 percent_on = 0.1                # percentage of bits that are flipped
 stimulus_length = 200      # length of the pattern
 n_prototypes = 5        # number of prototypes
-n_per_prototype = 10 # max 10!!          # number of variations for subclasses per prototype
+n_per_prototype = 10     # max 10!!          # number of variations for subclasses per prototype
 n_per_subclass= 10         # number of variations per subclass
 plot_prototype = 4              # index of the prototype to plot
 flip_first_round = 0.1     # percentage of bits that are flipped in the replication
@@ -18,10 +18,12 @@ flip_second_round = 0.05     # percentage of bits that are flipped in the replic
 
 
 
-# parameters
-print("This script generates data with the 'random' method by generating random prototypes in the first step and varying them in the second and third.")
-print("Method:                                      ", method)
-print("Number of classes:                           ", n_prototypes)
+print("\nPlease run the data generation file if not done so yet!!")
+print("\nNumber of seed patterns:                     ", n_prototypes)
+print("Number of prototypes per seed patterns       ", n_per_prototype)
+print("Number of prototypes total:                  ", n_per_prototype * n_prototypes)
+print("Number of variations per prototype           ", n_per_subclass) 
+print("Number of patterns total                     ", n_per_prototype * n_prototypes * n_per_subclass) 
 print("Number of input neurons (stimulus length):   ", stimulus_length)
 print("Number of hidden neurons:                    ", N_hidden)
 print("Number of class neurons:                     ", N_class)
@@ -47,5 +49,5 @@ plt.show() """
 
 # save data to file
 save_data(final_variations, 
-          unique="finnegan" + "_" + str(flip_first_round) + "_" + str(flip_second_round) + "_" + str(n_prototypes) + "_" + str(stimulus_length) + "_" + str(len(final_variations[0])), 
+          unique="finnegan", 
           path='scripts/data/')
