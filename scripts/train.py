@@ -3,8 +3,8 @@ from tools.srbm import *           # !!! Importing the experimental SRBM model !
 from tools.functions import *
 import matplotlib.pyplot as plt
 from brian2tools import *
-from tools.parameters_main import *
-from generate_data_Finnegan import *
+from tools.parameters import *
+from generate_data import *
 
 date_str = str(datetime.datetime.now())[0:10]
 date_time_str = str(datetime.datetime.now())[0:10]+"_"+str(datetime.datetime.now())[11:16]
@@ -14,11 +14,13 @@ date_time_str = str(datetime.datetime.now())[0:10]+"_"+str(datetime.datetime.now
 T = dcmt*t_ref
 init_delay=dcmt*t_ref
 delay=0*ms
+sparsity_cost = 0.1e-9
+p_target = 0.0002
 
 n_samples = 1000
 
 # Loading the data
-data_finnegan = load_data("data_finnegan", path='scripts/data/')
+data_finnegan = load_data("data_200_14", path='scripts/data/')
 
 train_test_data = train_test_split_finnegan(data_finnegan, 0.9)
 
@@ -30,6 +32,7 @@ off_time = 1 # How many frames should be after a test pattern before the next te
 # Create the Ids. Test patterns are not randomized!
 Ids, time_test_on, time_test_off = create_finnegan_Ids(train_test_data, off_time = 1)
 
+'''
 print("\nEach group consists of " + str(len(train_test_data[0][0]) * n_seed_patterns) + " randomized patterns. \n" +
       "The patterns for the first group consist of the " + str(len(train_test_data[0][0])) + " variations of " + 
       "the first of the " + str(n_prototype_per_seed) +  " prototypes \nthat were generated for each of the " + str(n_seed_patterns) + " seed patterns. \n" + 
@@ -38,8 +41,10 @@ print("\nEach group consists of " + str(len(train_test_data[0][0]) * n_seed_patt
       "seed pattern, etc., making " + str(len(train_test_data[0][0]) * n_seed_patterns) + " patterns in total. \n" + 
       "The second group consists of the 9 variations of the second prototype generated of the first seed \n" + 
       "pattern + the 9 variations of the second prototype generated of the second seed pattern, etc.")
+'''
 
-""" fig, ax = plt.subplots()
+""" 
+fig, ax = plt.subplots()
 plt.imshow(Ids, cmap='gray', aspect='auto', interpolation= "None")
 plt.xlabel("Neuron index")
 plt.ylabel("Time step")
@@ -47,12 +52,12 @@ plt.title("Input patterns")
 plt.show()
 print("The input patterns are shown above. \n" +
       "After each group of " + str(len(train_test_data[0][0]) * n_seed_patterns) + " patterns, test patterns for each prototype are shown. \n" + 
-      "In the end all test patterns are shown. \n") """
+      "In the end all test patterns are shown. \n") 
+"""
 
 
-## shorten ids for testing!
+#Ids = Ids[0:20] # shortened ids for testing!
 
-#Ids = Ids[0:20]
 # Create the parameters for the SRBM
 W, b_v, b_c, b_h = create_rbm_parameters(N_v = N_v, N_c = N_c, N_h = N_h)
 
@@ -62,15 +67,15 @@ timepoints, t_sim, time_points_dict = create_timepoints(Ids, init_delay, delay, 
 
 # Calculate simulation time for accurate neural growth
 sim_time = (t_sim / (dcmt*t_ref))
+
+
 # SRBM main function
 print("Starting the SRBM simulation...")
-out = main(W, b_v, b_c, b_h, Id = Ids, sim_time = sim_time, t_sim = t_sim, p_target = 0.0002, 
-           sparsity_cost = 0.1e-9, leak_helper = 4, dorun = True, n_classes = 5, 
+out = main(W, b_v, b_c, b_h, Id = Ids, sim_time = sim_time, t_sim = t_sim, p_target = p_target, 
+           sparsity_cost = sparsity_cost, leak_helper = 4, dorun = True, n_classes = 5, 
             monitors = True, display=False, age_neurons = False) # set display to false if no lables are used 
-Mh, Mv, Mc= out['Mh'], out['Mv'], out['Mc']
+Mh, Mv, Mc, sMhh, sMh= out['Mh'], out['Mv'], out['Mc'], out["sMhh"], out["sMh"]
 locals().update(out)
-sMhh = out["sMhh"]
-sMh = out["sMh"]
 
 # Prepare weights and biases
 W = np.array(Srs.w).reshape(N_v+N_c, N_h)*beta_parameter
@@ -123,8 +128,6 @@ def save_output(unique = "", date = "", path = "scripts/output/"):
               "after_split_n_per_prototype_test": len(train_test_data[1][0])}                                 
     with open(path +unique+date+'.pkl', 'wb') as handle: # Python 3:
         pickle.dump(output, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    print("Output saved as output/"+unique+date+".pkl")
+    print("Output saved as " + path+unique+date+".pkl")
 # Save the output to open in the evaluation notebook
 save_output(unique = "output_", date = date_str)
-
-print("The output of the SRBM simulation is saved in a pickle file.")
