@@ -17,5 +17,5 @@ age : 1
 eqs_str_lif_wnr = '''
 dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi)/Cm :volt
 dI_rec/dt = -I_rec/tau_rec : amp
-age : 1
-'''
+q : 1
+age : 1'''

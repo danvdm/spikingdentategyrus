@@ -4,7 +4,7 @@ from tools.functions import *
 import matplotlib.pyplot as plt
 from tools.parameters_main import *
 
-def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False):
+def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, sparsity_cost = 0.5, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
@@ -36,9 +36,18 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
             reset = "v = 0*volt",    # changed to string
             method = method
             )
+    
+    eqs_helper = '''dq/dt = (-helper_leak*q)/t_helper :1
+                    t_helper : second
+                    helper_leak : 1'''
+
+    neuron_group_rhidden_helper = NeuronGroup(\
+            N_h,
+            model = eqs_helper
+            )       
 
 
-    netobjs += [neuron_group_rvisible, neuron_group_rhidden]
+    netobjs += [neuron_group_rvisible, neuron_group_rhidden, neuron_group_rhidden_helper]
       
     #Bias group
     Bv = PoissonGroup(N_v+N_c, rates = bias_input_rate)     #Noise injection to v
@@ -50,7 +59,11 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     neuron_group_rvisible.I_d = 0. * amp
     neuron_group_rvisible.age = age_v
     neuron_group_rhidden.age = age_h
-
+    neuron_group_rhidden.q = 0
+    #neuron_group_rhidden.p = p_target
+    #neuron_group_rhidden.cost = sparsity_cost
+    neuron_group_rhidden_helper.t_helper = 1 * second
+    neuron_group_rhidden_helper.helper_leak = leak_helper
 
     #---------------------- Connections and Synapses
     #Bias units    
@@ -115,6 +128,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
                         Apost : 1
                         g : 1
                         w : 1
+                        p : 1
+                        cost : 1
                         lastupdate : second
                         ''', 
                  on_pre =''' 
@@ -122,7 +137,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
                         Apost = Apost*exp((lastupdate-t)/tau_learn)
                         Apre += deltaA
                         I_rec_post += w * amp
-                        w = w + g * Apost
+                        w = w + g * Apost + (g+1)/2*-q_post*cost + (-g+1)/2*p * cost
                         lastupdate = t
                         ''', 
                  on_post=''' 
@@ -130,13 +145,24 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
                         Apost = Apost * exp((lastupdate-t)/tau_learn)
                         Apost += deltaA
                         I_rec_pre += w * amp
-                        w = w + g * Apre 
+                        w = w + g * Apre + (((g+1)/2)*-q_post)*cost + (((-g+1)/2)*p) * cost
                         lastupdate = t
                         ''', 
                    method = method
                         )
     Srs.connect()
-    netobjs+=[Sbv,Sbh,Srs]
+
+    Srs.p = p_target
+    Srs.cost = sparsity_cost
+    # + (g+1)/2*-q*cost + (-g+1)/2*p * cost
+
+
+    Shh = Synapses(neuron_group_rhidden, neuron_group_rhidden_helper,
+                   on_pre='''q_post += 0.0001
+                             q_pre = q_post''')
+    Shh.connect(j='i')
+
+    netobjs+=[Sbv,Sbh,Srs, Shh]
     
     M_rec = Whv/beta_parameter
     for i in range(M_rec.shape[0]):
@@ -165,6 +191,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     # followed by a free- running LTD phase (reconstruction). The weights are updated asynchronously 
     # during the time interval in which the neural sampling proceeds.
 
+
     @network_operation(clock = ev)
     def g_update(when='after'):
         tmod, n = custom_step(ev, sim_time)
@@ -184,7 +211,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
             Sbh.g = Sbv.g = 0. # synapses connecting biases to hidden/ visible layers 
 
         elif int(t_burn_percent)<=tmod<49: # if time is higher than burn in but lower than 50 cycles: g = 1, meaning 
-            g_up = 1.
+            g_up = 1. 
             Srs.g = Sbv.g = Sbh.g =  g_up 
             
         elif 49<=tmod < 50+int(t_burn_percent):
@@ -242,16 +269,18 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     #--------------------------- Monitors
     if monitors:
         Mh=SpikeMonitor(neuron_group_rhidden)
-        Mv=SpikeMonitor(neuron_group_rvisible)
+        #Mv=SpikeMonitor(neuron_group_rvisible)
         Mv=SpikeMonitor(neuron_group_rvisible[:N_v])
+        sMhh=StateMonitor(neuron_group_rhidden_helper, variables='q', record=True)
+        sMh=StateMonitor(neuron_group_rhidden_helper, variables='q', record=True)
         if N_c > 0:
             Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
             Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
-            netobjs += [Mh, Mv, Mc, Mvmem]
+            netobjs += [Mh, Mv, Mc, Mvmem, sMhh, sMh]
         else: 
             Mc = None
             Mvmem = None
-            netobjs += [Mh, Mv]
+            netobjs += [Mh, Mv, sMhh, sMh]
         
         
 
@@ -259,7 +288,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, dorun = True, monitors=True, m
     if dorun:
         import time
         tic = time.time()      
-        net.run(t_sim)
+        net.run(t_sim, report='text')
         toc = time.time()-tic
         print(toc)
         

@@ -546,3 +546,47 @@ def load_output(unique = "output", date = "", path = "output/"):
 
 def binarize(x, threshold):
     return np.where(x > threshold, 1, 0)
+
+def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n_seed_patterns, n_prototype_per_seed, after_split_n_per_prototype_test, time_test_on, selection = "group"):
+    test_patterns_while_training = after_split_n_per_prototype_test * n_prototype_per_seed * n_seed_patterns
+    final_test_patterns = time_test_on[test_patterns_while_training:]
+    if selection == "group":
+        out = np.zeros((n_prototype_per_seed, n_seed_patterns, n_seed_patterns))
+        for i in range(n_prototype_per_seed):
+            test_patterns_group = final_test_patterns[i:i+n_seed_patterns]
+            for j in range(n_seed_patterns):
+                for k in range(n_seed_patterns):
+                    t_1 = test_patterns_group[j]
+                    t_2 = test_patterns_group[k]
+                    timepoint_s_1 = timpoint_dict["T"+str(t_1)+"_s"]
+                    timepoint_e_1 = timpoint_dict["T"+str(t_1)+"_e"]
+                    timepoint_s_2 = timpoint_dict["T"+str(t_2)+"_s"]
+                    timepoint_e_2 = timpoint_dict["T"+str(t_2)+"_e"]
+
+                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1).T[1]
+                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1).T[1]
+                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2).T[1]
+                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2).T[1]
+                    if j != k:
+                        out[i, j, k] = pattern_separation_efficacy(sv1, sv2, sh1, sh2)
+    if selection == "prototype":
+        out = np.zeros((n_seed_patterns, n_prototype_per_seed, n_prototype_per_seed))
+        for i in range(n_seed_patterns):
+            test_patterns_group = final_test_patterns[i::n_seed_patterns]
+            for j in range(n_prototype_per_seed):
+                for k in range(n_prototype_per_seed):
+                    t_1 = test_patterns_group[j]
+                    t_2 = test_patterns_group[k]
+                    timepoint_s_1 = timpoint_dict["T"+str(t_1)+"_s"]
+                    timepoint_e_1 = timpoint_dict["T"+str(t_1)+"_e"]
+                    timepoint_s_2 = timpoint_dict["T"+str(t_2)+"_s"]
+                    timepoint_e_2 = timpoint_dict["T"+str(t_2)+"_e"]
+
+                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1).T[1]
+                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1).T[1]
+                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2).T[1]
+                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2).T[1]
+                    if j != k:
+                        out[i, j, k] = pattern_separation_efficacy(sv1, sv2, sh1, sh2)
+    return out
+
