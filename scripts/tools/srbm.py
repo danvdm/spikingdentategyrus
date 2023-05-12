@@ -2,7 +2,7 @@ import numpy as np
 from brian2 import *
 from tools.functions import *
 import matplotlib.pyplot as plt
-from tools.parameters_main import *
+from tools.parameters import *
 
 def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, sparsity_cost = 0.5, dorun = True, monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False):
 

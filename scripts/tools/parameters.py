@@ -2,6 +2,27 @@
 from brian2 import *
 from tools.functions import *
 
+n_classes = 0                          # number of classes
+N_v = N_inputs = 200                     # number of input neurons
+N_c = N_class = 0                      # number of class neurons
+N_h = N_hidden = 1000                     # number of hidden neurons
+
+n_c_unit = 0 # N_c/n_classes               # number of class neurons per class
+
+# neuron equations:
+eqs_str_lif_wnrd = '''
+dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi + I_d)/Cm :volt
+dI_rec/dt = -I_rec/tau_rec : amp
+I_d : amp
+age : 1
+'''
+eqs_str_lif_wnr = '''
+dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi)/Cm :volt
+dI_rec/dt = -I_rec/tau_rec : amp
+q : 1
+age : 1'''
+
+
 dcmt = 20                               # duty cyle in multiples of t_ref
 generations = 2
 #sim_time = 2 # originally 300s
@@ -49,25 +70,3 @@ deltaAbias = eta/beta_parameter/tau_learn/deltaT*t_ref*(1./bias_input_rate)/2
 i_inj = (- np.log(float(gamma))
          - np.log(float(t_ref))
          )/beta_parameter * amp                   # injected current ?
-
-n_classes = 0                          # number of classes
-N_v = N_inputs = 200                     # number of input neurons
-N_c = N_class = 0                      # number of class neurons
-N_h = N_hidden = 1000                     # number of hidden neurons
-
-n_c_unit = 0 # N_c/n_classes               # number of class neurons per class
-
-
-# neuron equations
-eqs_str_lif_wnrd = '''
-dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi + I_d)/Cm :volt
-dI_rec/dt = -I_rec/tau_rec : amp
-I_d : amp
-age : 1
-'''
-
-eqs_str_lif_wnr = '''
-dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi)/Cm :volt
-dI_rec/dt = -I_rec/tau_rec : amp
-q : 1
-age : 1'''

@@ -1,9 +1,7 @@
 import numpy as np
 from tools.functions import *
 import matplotlib.pyplot as plt
-from tools.common_parameters import *
-
-
+from tools.parameters import *
 
 # parameters
 percent_on = 0.1                # percentage of bits that are flipped
@@ -14,7 +12,6 @@ n_variations_per_prototype= 15         # number of variations per subclass
 plot_prototype = 4              # index of the prototype to plot
 flip_first_round = 0.1     # percentage of bits that are flipped in the replication
 flip_second_round = 0.05     # percentage of bits that are flipped in the replication
-
 
 
 print("\nPlease run the data generation file if not done so yet!!")
