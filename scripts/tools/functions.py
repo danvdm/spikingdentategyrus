@@ -218,7 +218,7 @@ def custom_step(clock_object, sim_time):
 def gomperz_function(x, steepness):
     return np.exp(-np.exp(-steepness*x))
 
-def spike_histogram(spike_monitor, t_start, t_stop):
+def spike_histogram(spike_monitor, t_start, t_stop, s_per_s = True):
     '''
     Returns firing rate of spike_monitor between t_start and t_stop
     '''
@@ -233,7 +233,11 @@ def spike_histogram(spike_monitor, t_start, t_stop):
         idx_high = s < t_stop
         idx = idx_low * idx_high
         return np.sum(idx)
-    count = np.array(list(map(f, v)), dtype='float')/delta_t
+    if s_per_s == True:
+        s_per_s = 1
+    else:
+        s_per_s = delta_t
+    count = np.array(list(map(f, v)), dtype='float')/ delta_t * s_per_s # count spikes per neuron per second
     return np.array(list(zip(*[k,count])))
 
 def save_matrices(W, Wvh, Wch, mBv, mBh, b_c, b_v, b_h, mB, date_str, date_time_str, path = "output/"):
@@ -547,13 +551,14 @@ def load_output(unique = "output", date = "", path = "output/"):
 def binarize(x, threshold):
     return np.where(x > threshold, 1, 0)
 
-def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n_seed_patterns, n_prototype_per_seed, after_split_n_per_prototype_test, time_test_on, selection = "group"):
-    test_patterns_while_training = after_split_n_per_prototype_test * n_prototype_per_seed * n_seed_patterns
-    final_test_patterns = time_test_on[test_patterns_while_training:]
-    if selection == "group":
-        out = np.zeros((n_prototype_per_seed, n_seed_patterns, n_seed_patterns))
+def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n_seed_patterns, n_prototype_per_seed, after_split_n_per_prototype_test, time_test_on, selection = "group", to_binary = False, 
+                                      convert_to_hz = False, threshold = 1, report = False):
+    test_patterns_while_training = after_split_n_per_prototype_test * n_prototype_per_seed * n_seed_patterns # get the number of test patterns while training
+    final_test_patterns = time_test_on[test_patterns_while_training:] # get test patterns after training was done (its the same number as test patterns while training)
+    if selection == "group": 
+        out = np.zeros((n_prototype_per_seed, n_seed_patterns, n_seed_patterns)) # initialize output 
         for i in range(n_prototype_per_seed):
-            test_patterns_group = final_test_patterns[i:i+n_seed_patterns]
+            test_patterns_group = final_test_patterns[i:i+n_seed_patterns] 
             for j in range(n_seed_patterns):
                 for k in range(n_seed_patterns):
                     t_1 = test_patterns_group[j]
@@ -563,10 +568,22 @@ def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n
                     timepoint_s_2 = timpoint_dict["T"+str(t_2)+"_s"]
                     timepoint_e_2 = timpoint_dict["T"+str(t_2)+"_e"]
 
-                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1).T[1]
-                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1).T[1]
-                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2).T[1]
-                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2).T[1]
+                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1, s_per_s=convert_to_hz).T[1]
+                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1, s_per_s=convert_to_hz).T[1]
+                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2, s_per_s=convert_to_hz).T[1]
+                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2, s_per_s=convert_to_hz).T[1]
+
+                    if report:
+                        print("sv1", sv1)
+
+                    if to_binary:
+                        sv1 = binarize(sv1, threshold = threshold)
+                        sh1 = binarize(sh1, threshold = threshold)
+                        sv2 = binarize(sv2, threshold = threshold)
+                        sh2 = binarize(sh2, threshold = threshold)
+                        if report:
+                            print("Binarized to: ", sv1)
+
                     if j != k:
                         out[i, j, k] = pattern_separation_efficacy(sv1, sv2, sh1, sh2)
     if selection == "prototype":
@@ -582,11 +599,46 @@ def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n
                     timepoint_s_2 = timpoint_dict["T"+str(t_2)+"_s"]
                     timepoint_e_2 = timpoint_dict["T"+str(t_2)+"_e"]
 
-                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1).T[1]
-                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1).T[1]
-                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2).T[1]
-                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2).T[1]
+                    sv1 = spike_histogram(monitor_vis, timepoint_s_1, timepoint_e_1, s_per_s=convert_to_hz).T[1]
+                    sh1 = spike_histogram(monitor_hid, timepoint_s_1, timepoint_e_1, s_per_s=convert_to_hz).T[1]
+                    sv2 = spike_histogram(monitor_vis, timepoint_s_2, timepoint_e_2, s_per_s=convert_to_hz).T[1]
+                    sh2 = spike_histogram(monitor_hid, timepoint_s_2, timepoint_e_2, s_per_s=convert_to_hz).T[1]
+
+                    if report:
+                        print("sv1", sv1)
+
+                    if to_binary:
+                        sv1 = binarize(sv1, threshold = threshold)
+                        sh1 = binarize(sh1, threshold = threshold)
+                        sv2 = binarize(sv2, threshold = threshold)
+                        sh2 = binarize(sh2, threshold = threshold)
+                        if report:
+                            print("Binarized to: ", sv1)
+
                     if j != k:
                         out[i, j, k] = pattern_separation_efficacy(sv1, sv2, sh1, sh2)
     return out
 
+def create_connection_matrix(N_input, N_hidden, probabilities):
+    '''Creates a binary connection matrix with the number of connetions between the
+      hidden and visible neurons beeing dependent on the given probabilities for the hidden neurons.'''
+    W = np.zeros((N_input, N_hidden))
+    for i in range(N_hidden):
+        for j in range(N_input):
+            if np.random.random() < probabilities[i]:
+                W[j,i] = 1
+    return W
+
+def update_connection_matrix(connections, probabilities):
+    '''Updates a binary connection matrix with the number of connetions between the
+      hidden and visible neurons beeing dependent on the given probabilities for the hidden neurons.'''
+    for i in range(connections.shape[1]):
+        n_active = np.sum(connections[:,i])
+        missing = int(np.round(probabilities[i]*connections.shape[0])) - n_active
+        if missing > 0:
+            idx = np.random.choice(np.where(connections[:,i]==0)[0], size=int(missing), replace=False)
+            connections[idx,i] = 1
+        elif missing < 0:
+            idx = np.random.choice(np.where(connections[:,i]==1)[0], size=int(-missing), replace=False)
+            connections[idx,i] = 0
+    return connections

@@ -138,8 +138,10 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     netobjs+=[Sbv,Sbh,Srs]
     
     M_rec = Whv/beta_parameter
-    for i in range(M_rec.shape[0]):
-        Srs.w[i,:] = M_rec[i,:]
+    """ for i in range(M_rec.shape[0]):
+        Srs.w[i,:] = M_rec[i,:] """
+
+    Srs.w[:] = M_rec.flatten()
 
     period = dcmt*t_ref
     mod = 100
@@ -243,7 +245,7 @@ def main(Whv, b_v, b_c, b_h, Id, dorun = True, monitors=True, mnist_data = None)
     if dorun:
         import time
         tic = time.time()      
-        net.run(t_sim)
+        net.run(t_sim, report='text')
         toc = time.time()-tic
         print(toc)
         
