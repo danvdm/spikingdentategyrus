@@ -1,0 +1,12 @@
+output_tiny_sparse_coding_cost_e-4_p_e-10.pkl:
+
+# SRBM main function
+# leak helper is sensistivity ov average
+print("Starting the SRBM simulation...")
+out = main(W, b_v, b_c, b_h, Id = Ids, sim_time = sim_time, t_sim = t_sim, p_target = 1e-10, 
+           sparsity_cost = 1e-4 , leak_helper = 10, dorun = True, n_classes = 5, 
+            monitors = True, display=False, age_neurons = False, generations = 1, 
+            connectivity_born=0.8, connectivity_mature=0.8, lock_connectivity = True) # set display to false if no lables are used 
+locals().update(out)
+
+no ageing for sparsity!!
