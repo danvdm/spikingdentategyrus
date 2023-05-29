@@ -3,9 +3,9 @@ from brian2 import *
 from tools.functions import *
 
 n_classes = 0                          # number of classes
-N_v = N_inputs = 50                     # number of input neurons
+N_v = N_inputs = 100                     # number of input neurons
 N_c = N_class = 0                      # number of class neurons
-N_h = N_hidden = 100                     # number of hidden neurons
+N_h = N_hidden = 500                     # number of hidden neurons
 
 n_c_unit = 0 # N_c/n_classes               # number of class neurons per class
 
@@ -17,14 +17,15 @@ I_d : amp
 age : 1
 '''
 eqs_str_lif_wnr = '''
-dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi)/Cm :volt
+dv/dt = (-g_leak*4*v + i_inj + I_rec + wnsigma*xi)/Cm :volt
 dI_rec/dt = -I_rec/tau_rec : amp
 q : 1
 age : 1
 '''
+# *((-age+2)/2+1)
+#  
 
-
-dcmt = 40                              # duration of cycle
+dcmt = 60                              # duration of cycle
 generations = 2
 #sim_time = 2 # originally 300s
 

@@ -5,25 +5,26 @@ import matplotlib.pyplot as plt
 from tools.parameters import *
 
 def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, sparsity_cost = 0.5, dorun = True, 
-         monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False, generations = 1):
+         monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False, generations = 1,
+         connectivity_born = 0.5, connectivity_mature = 0.5, lock_connectivity = False):
 
     start_scope()
     b_init = np.concatenate([b_v, b_c, b_h])
     netobjs = []
 
-    qb = 4
+    ageing_factor = generations/(sim_time*(dcmt*t_ref)/4/second) # 4 is the working domain of the gompertz function (see initialisation of age_h)
+    print('ageing factor: ', ageing_factor)
 
     if age_neurons:
         age_h = np.random.uniform(-1, 3, N_h)
-        threshold_hidden = 'v>((exp(-exp(-2*age)) + 0.0) * 10 * theta)'
-        connections_init = create_connection_matrix(N_input=N_v+N_c, N_hidden=N_h, probabilities=np.repeat(0.5, N_h))
+        threshold_hidden = 'v>theta' #'v>((exp(-exp(-2*age)) + 0.0) * 2 * theta)'
+        connections_init = create_connection_matrix(N_input=N_v+N_c, N_hidden=N_h, probabilities=np.repeat(0.5, N_h), pmin = connectivity_born, pmax = connectivity_mature)
     else: 
-        age_h = np.repeat(1, N_h)
+        age_h = np.repeat(1, N_h) 
         threshold_hidden = 'v>theta'
-        connections_init = 1
+        connections_init = 1 
 
-    ageing_factor = generations/(sim_time*(dcmt*t_ref)/4/second) # 4 is the working domain of the gompertz function (see initialisation of age_h)
-    print('ageing factor: ', ageing_factor)
+    
     
     #------------------------------------------ Neuron Groups
     
@@ -39,26 +40,39 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     neuron_group_rhidden = NeuronGroup(\
             N_h,
             model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
-            threshold = threshold_hidden,  # removed *volt
+            threshold = threshold_hidden,  # removed *volt 
             refractory = t_ref,
             reset = "v = 0*volt",    # changed to string
             method = method
             )
     
-    eqs_helper = '''dq/dt = (-helper_leak*q)/t_helper :1
+    eqs_helper_age = '''
                     dage/dt = age_factor/t_helper :1
                     t_helper : second
                     age_factor : 1
                     helper_leak : 1'''
 
-    neuron_group_rhidden_helper = NeuronGroup(\
+    eqs_helper_av_act = '''
+                        dq/dt = ((-helper_leak*q)/t_helper) :1
+                        t_helper : second
+                        helper_leak : 1
+                        n_hidden : 1'''
+    
+    neuron_group_rhidden_helper_age = NeuronGroup(\
             N_h,
-            model = eqs_helper, 
+            model = eqs_helper_age, 
             threshold = 'age > 3',
             reset = 'age = -1',
-            )       
+            ) 
+    
+    neuron_group_rhidden_helper_av_act = NeuronGroup(\
+        1,
+        model = eqs_helper_av_act
+        ) 
 
-    netobjs += [neuron_group_rvisible, neuron_group_rhidden, neuron_group_rhidden_helper]
+    netobjs += [neuron_group_rvisible, neuron_group_rhidden, 
+                neuron_group_rhidden_helper_age,
+                neuron_group_rhidden_helper_av_act]
       
     #Bias group
     Bv = PoissonGroup(N_v+N_c, rates = bias_input_rate)     #Noise injection to v
@@ -68,10 +82,15 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     
     #---------------------- Initialize State Variables
     neuron_group_rvisible.I_d = 0. * amp
-    neuron_group_rhidden_helper.t_helper = 1 * second
-    neuron_group_rhidden_helper.helper_leak = leak_helper
-    neuron_group_rhidden_helper.age = age_h
-    neuron_group_rhidden_helper.age_factor = ageing_factor
+    
+    neuron_group_rhidden_helper_age.t_helper = 1 * second
+    neuron_group_rhidden_helper_age.helper_leak = leak_helper
+    neuron_group_rhidden_helper_age.age = age_h
+    neuron_group_rhidden_helper_age.age_factor = ageing_factor
+    neuron_group_rhidden_helper_av_act.t_helper = 1 * second
+    neuron_group_rhidden_helper_av_act.helper_leak = leak_helper
+    neuron_group_rhidden_helper_av_act.n_hidden = N_h
+
 
 
     #---------------------- Connections and Synapses
@@ -146,7 +165,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                         Apost = Apost*exp((lastupdate-t)/tau_learn)
                         Apre += deltaA
                         I_rec_post += w * amp
-                        w = w + g * Apost 
+                        w = w + g * Apost + ((g+1)/2*-q_post + (-g+1)/2*p) * cost 
                         lastupdate = t
                         ''', 
                  on_post=''' 
@@ -154,7 +173,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                         Apost = Apost * exp((lastupdate-t)/tau_learn)
                         Apost += deltaA
                         I_rec_pre += w * amp
-                        w = w + g * Apost 
+                        w = w + g * Apre + ((g+1)/2*-q_post + (-g+1)/2*p) * cost 
                         lastupdate = t
                         ''', 
                    method = method
@@ -163,25 +182,36 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     Srs.connect()
 
     #  + ((((g+1)/2*-q_post) + ((-g+1)/2*p)) * cost * (-age_post+1))
+    # * (-age_post+1))
+    # (((g+1)/2)*-q_post + ((-g+1)/2)*p) * cost 
+
+
     Srs.p = p_target
     Srs.cost = sparsity_cost
 
 
-    Shh = Synapses(neuron_group_rhidden, neuron_group_rhidden_helper,
-                   on_pre='''q_post += 0.0001
-                             ''')
-    Shh.connect(j='i')
+    Shh_age = Synapses(neuron_group_rhidden, neuron_group_rhidden_helper_age)
+    
+    Shh_age.connect(j = "i")
 
-    netobjs+=[Sbv,Sbh,Srs, Shh]
+    Shh_av_act = Synapses(neuron_group_rhidden, neuron_group_rhidden_helper_av_act,
+                   on_pre='''q_post += 1e-10
+                             ''')
+    
+    Shh_av_act.connect()
+    
+    
+
+    netobjs+=[Sbv,Sbh,Srs, 
+              Shh_age, Shh_av_act
+              ]
     
     M_rec = Whv/beta_parameter
-    """ for i in range(M_rec.shape[0]):
-        Srs.w[i,:] = M_rec[i,:] """
     
     #------------------------------------------ Connection matrix
     #connections = create_connection_matrix(N_input=N_v+N_c, N_hidden=N_h, probabilities=gomperz_function(neuron_group_rhidden.age, 2))
 
-    M_rec = M_rec * connections_init
+    M_rec = M_rec * connections_init #                                !!!!!!!!!!!!!!!
     Srs.w[:] = M_rec.flatten() # deeeegaaaaaaaaa!!!!!!!!!!!!!!!
 
     period = dcmt*t_ref
@@ -206,20 +236,22 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     # during the time interval in which the neural sampling proceeds.
 
     weights = []
+    connections = []
 
     @network_operation(clock = ev)
     def g_update(when='after'):
         tmod, n = custom_step(ev, sim_time)            
 
         if age_neurons:
-            neuron_group_rhidden.age = neuron_group_rhidden_helper.age 
-            Wts = np.full((N_v + N_c, N_h), np.nan)
-            Wts[Srs.i[:], Srs.j[:]] = Srs.w[:]
-            ev.connections = update_connection_matrix(ev.connections, probabilities=gomperz_function(neuron_group_rhidden.age, 2))
-            Wts_updated = Wts * ev.connections
-            Srs.w[:] = Wts_updated.flatten()
+            neuron_group_rhidden.age = neuron_group_rhidden_helper_age.age 
+            if not lock_connectivity:
+                Wts = np.full((N_v + N_c, N_h), np.nan)
+                Wts[Srs.i[:], Srs.j[:]] = Srs.w[:]
+                ev.connections = update_connection_matrix(ev.connections, probabilities=gomperz_function(neuron_group_rhidden.age, 2), pmin = connectivity_born, pmax = connectivity_mature)
+                Wts_updated = Wts * ev.connections
+                Srs.w[:] = Wts_updated.flatten()
 
-        neuron_group_rhidden.q = neuron_group_rhidden_helper.q
+        neuron_group_rhidden.q = neuron_group_rhidden_helper_av_act.q / N_h
 
         if tmod < 50:   # while below 50 cycles, clamp data to visible units. Otherwise input current = 0 below 50 is data phase, above 50 is reconstruction phase
             neuron_group_rvisible.I_d = Id[n] * amp
@@ -254,6 +286,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             Sbh.Apre=0
             Sbh.Apost=0
             #weights.append(Wts_updated.flatten())
+            #connections.append(ev.connections.flatten())
+            #print(neuron_group_rhidden_helper_age.age)
         neuron_group_rvisible.age = age_v
 
     netobjs += [g_update]
@@ -289,19 +323,24 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
         Mh=SpikeMonitor(neuron_group_rhidden)
         #Mv=SpikeMonitor(neuron_group_rvisible)
         Mv=SpikeMonitor(neuron_group_rvisible[:N_v])
-        sMhh=StateMonitor(neuron_group_rhidden_helper, variables='q', record=True)
-        sMh=StateMonitor(neuron_group_rhidden_helper, variables='q', record=True)
+        sMhh_age=StateMonitor(neuron_group_rhidden_helper_age, variables='age', record=True)
+        sMhh_av_act=StateMonitor(neuron_group_rhidden_helper_av_act, variables='q', record=True)
         sMh_age=StateMonitor(neuron_group_rhidden, variables='age', record=True)
         sMh_v=StateMonitor(neuron_group_rhidden, variables='v', record=True)
-        sMhh_age=StateMonitor(neuron_group_rhidden_helper, variables='age', record=True)
+        sMh_q=StateMonitor(neuron_group_rhidden, variables='q', record=True)
+        sMhh_age=StateMonitor(neuron_group_rhidden_helper_age, variables='age', record=True)
         if N_c > 0:
             Mc=SpikeMonitor(neuron_group_rvisible[N_v:])
             Mvmem=StateMonitor(neuron_group_rvisible[N_v:], variables='v', record=True, )
-            netobjs += [Mh, Mv, Mc, Mvmem, sMhh, sMh, sMh_age, sMh_v, sMhh_age]
+            netobjs += [Mh, Mv, Mc, Mvmem, sMh_age, sMh_v, sMh_q,
+                        sMhh_age, sMh_age, sMhh_age, sMhh_av_act
+                        ]
         else: 
             Mc = None
             Mvmem = None
-            netobjs += [Mh, Mv, sMhh, sMh, sMh_age, sMh_v, sMhh_age]
+            netobjs += [Mh, Mv, sMh_age, sMh_v, 
+                        sMhh_age, sMhh_av_act, sMh_q
+                        ]
         
         
 

@@ -5,10 +5,10 @@ from tools.parameters import *
 
 # parameters
 percent_on = 0.1                # percentage of bits that are flipped
-stimulus_length = 50      # length of the pattern
+stimulus_length = 100      # length of the pattern
 n_seed_patterns = 5        # number of prototypes
 n_prototype_per_seed = 10     # max 10!!          # number of variations for subclasses per prototype
-n_variations_per_prototype= 15         # number of variations per subclass
+n_variations_per_prototype= 10         # number of variations per subclass
 plot_prototype = 4              # index of the prototype to plot
 flip_first_round = 0.1     # percentage of bits that are flipped in the replication
 flip_second_round = 0.05     # percentage of bits that are flipped in the replication
@@ -45,5 +45,5 @@ plt.show() """
 
 # save data to file
 save_data(final_variations, 
-          unique="50_15", 
+          unique="100_10_01_005", 
           path='scripts/data/')

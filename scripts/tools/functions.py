@@ -619,9 +619,11 @@ def pattern_separation_efficacy_model(monitor_vis, monitor_hid, timpoint_dict, n
                         out[i, j, k] = pattern_separation_efficacy(sv1, sv2, sh1, sh2)
     return out
 
-def create_connection_matrix(N_input, N_hidden, probabilities):
+def create_connection_matrix(N_input, N_hidden, probabilities, pmin = 0, pmax = 1):
     '''Creates a binary connection matrix with the number of connetions between the
       hidden and visible neurons beeing dependent on the given probabilities for the hidden neurons.'''
+    if np.min(probabilities) != np.max(probabilities):
+        probabilities = (probabilities - np.min(probabilities))/(np.max(probabilities) - np.min(probabilities))*(pmax-pmin) + pmin
     W = np.zeros((N_input, N_hidden))
     for i in range(N_hidden):
         for j in range(N_input):
@@ -629,9 +631,12 @@ def create_connection_matrix(N_input, N_hidden, probabilities):
                 W[j,i] = 1
     return W
 
-def update_connection_matrix(connections, probabilities):
+def update_connection_matrix(connections, probabilities, pmin = 0, pmax = 1):
     '''Updates a binary connection matrix with the number of connetions between the
       hidden and visible neurons beeing dependent on the given probabilities for the hidden neurons.'''
+    # scale probabilities to be between pmin and pmax
+    if np.min(probabilities) != np.max(probabilities):
+        probabilities = (probabilities - np.min(probabilities))/(np.max(probabilities) - np.min(probabilities))*(pmax-pmin) + pmin
     for i in range(connections.shape[1]):
         n_active = np.sum(connections[:,i])
         missing = int(np.round(probabilities[i]*connections.shape[0])) - n_active
@@ -642,3 +647,125 @@ def update_connection_matrix(connections, probabilities):
             idx = np.random.choice(np.where(connections[:,i]==1)[0], size=int(-missing), replace=False)
             connections[idx,i] = 0
     return connections
+
+def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time_points_dict, binarize, threshold): 
+    vis = []
+    hid = []
+    for i in times:
+        t_start = time_points_dict["T"+ str(i)+"_s"]
+        t_stop = time_points_dict["T"+ str(i)+"_e"]
+        visible = spike_histogram(spike_monitor_visible, t_start=t_start, t_stop=t_stop).T[1]
+        hiddden = spike_histogram(spike_monitor_hidden, t_start=t_start, t_stop=t_stop).T[1]
+        if binarize:
+            visible = np.where(visible > threshold, 1, 0)
+            hiddden = np.where(hiddden > threshold, 1, 0)
+        vis.append(visible)
+        hid.append(hiddden)
+    return vis, hid
+
+def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 60, binarize = True, order_of_model = 3, off_time = 1, 
+                             plot_3rd_order = False, plot_error_bars = True, split = (0.5,1), ylimit = (0, 100), xlimit = (0, 20), 
+                             go_through_origin = False):
+    ''' Sorry for this horrible mess of a function. It is used to plot the input-output curves of the network.'''
+    import matplotlib.colors as mcolors
+    from matplotlib.lines import Line2D
+
+    if isinstance(threshold, int):
+        threshold = np.repeat(threshold, len(outputs))
+
+    counter = 0
+    space = -0.5
+    legend_elements = []
+
+    for output in outputs:
+        Mv_loaded = output["Mv"]
+        Mh_loaded = output["Mh"]
+        time_test_on = output["time_test_on"]
+        time_points_dict = output["time_points_dict"]
+
+        time_test_off_loaded = output["time_test_off"]
+        t_on = np.setdiff1d(np.arange(1, max(time_test_off_loaded)), time_test_off_loaded)
+        time_points = t_on[int(len(t_on)*split[0]):int(len(t_on)*split[1])]
+
+        originals, recovered = get_hist_vis_hidden(Mv_loaded, Mh_loaded, time_points, time_points_dict, 
+                                                                                        binarize = binarize, threshold = threshold[counter])
+        distances_in = np.zeros((len(originals), len(originals)))
+        for i in range(len(originals)):
+            for j in range(len(originals)):
+                distances_in[i,j] = calculate_hamming_distance(originals[i], originals[j])
+
+        distances_out = np.zeros((len(recovered), len(recovered)))
+        for i in range(len(recovered)):
+            for j in range(len(recovered)):
+                distances_out[i,j] = calculate_hamming_distance(recovered[i], recovered[j])
+        unique_dist_in = np.unique(distances_in)
+        matched_dist_out_mean = []
+        matched_dist_out_std = []
+        all_in = []
+        all_out = []
+        for i in unique_dist_in:
+            matched_dist_out_mean.append(mean(distances_out[np.where(distances_in == i)]))
+            matched_dist_out_std.append(std(distances_out[np.where(distances_in == i)]))
+            all_in.append(distances_in[np.where(distances_in == i)])
+            all_out.append(distances_out[np.where(distances_in == i)])
+
+        all_in = np.concatenate(all_in)
+        all_out = np.concatenate(all_out)
+
+
+        #model_1 = np.poly1d(np.polyfit(all_in, all_out, order_of_model))
+        model_2 = np.poly1d(np.polyfit(all_in, all_out, 1))
+        polyline = np.linspace(-2, max(unique_dist_in)+1, 100)
+        col = list(mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]][:])
+        col.append(alpha)
+        if plot_error_bars:
+            plt.errorbar(unique_dist_in+space, matched_dist_out_mean, matched_dist_out_std, linestyle='None', marker='.', linewidth=1,
+                        color = col)
+        else:
+            plt.plot(unique_dist_in+space, matched_dist_out_mean, linestyle='None', marker='.', markersize=5,
+                        color = col)
+
+        if plot_3rd_order:
+            from scipy.optimize import curve_fit
+            if go_through_origin:
+                def fit_func(x, a, b, c):
+                    # Curve fitting function
+                    return a * x**3 + b * x**2 + c * x  # d=0 is implied
+
+                """ plt.plot(polyline, model_1(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
+                        linestyle='-', linewidth=1) """
+                # Curve fitting
+                params = curve_fit(fit_func, all_in, all_out)
+                [a, b, c] = params[0]
+                x_fit = np.linspace(all_in[0], all_in[-1], 100)
+                y_fit = a * x_fit**3 + b * x_fit**2 + c * x_fit 
+            else: 
+                def fit_func(x, a, b, c, d):
+                    # Curve fitting function
+                    return a * x**3 + b * x**2 + c * x + d # d=0 is implied
+
+                """ plt.plot(polyline, model_1(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
+                        linestyle='-', linewidth=1) """
+                # Curve fitting
+                params = curve_fit(fit_func, all_in, all_out)
+                [a, b, c, d] = params[0]
+                x_fit = np.linspace(all_in[0], all_in[-1], 100)
+                y_fit = a * x_fit**3 + b * x_fit**2 + c * x_fit + d
+            plt.plot(x_fit, y_fit, label="_lalala", color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]])  # Fitted curve
+        else: 
+            plt.plot(polyline, model_2(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
+                linestyle='--', linewidth=0.5)  
+        
+        plt.xlim(xlimit)
+        plt.ylim(ylimit)
+        plt.xlabel("Hamming distance between input patterns")
+        plt.ylabel("Hamming distance between hidden patterns")
+        legend_elements.append(Line2D([0], [0], marker='o', color="w", label=model_identifyer[counter],  markerfacecolor=mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], markersize=5))
+        counter += 1
+        space += 0.5
+    #plt.legend(model_identifyer[:len(outputs)])
+    plt.legend(handles=legend_elements)
+    plt.plot(np.linspace(-2, max(ylimit)+1, 3), np.linspace(-2, max(ylimit)+1, 3), color='gray', 
+            linestyle='--', linewidth=1)
+
+    plt.show()
