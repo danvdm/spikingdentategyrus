@@ -40,7 +40,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     neuron_group_rhidden = NeuronGroup(\
             N_h,
             model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
-            threshold = threshold_hidden,  # removed *volt 
+            threshold =  'v>theta',       # threshold_hidden,  # removed *volt 
             refractory = t_ref,
             reset = "v = 0*volt",    # changed to string
             method = method
@@ -181,6 +181,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     
     Srs.connect()
 
+
+
     #  + ((((g+1)/2*-q_post) + ((-g+1)/2*p)) * cost * (-age_post+1))
     # * (-age_post+1))
     # (((g+1)/2)*-q_post + ((-g+1)/2)*p) * cost 
@@ -247,7 +249,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             if not lock_connectivity:
                 Wts = np.full((N_v + N_c, N_h), np.nan)
                 Wts[Srs.i[:], Srs.j[:]] = Srs.w[:]
-                ev.connections = update_connection_matrix(ev.connections, probabilities=gomperz_function(neuron_group_rhidden.age, 2), pmin = connectivity_born, pmax = connectivity_mature)
+                ev.connections = update_connection_matrix(ev.connections, probabilities=gomperz_function(neuron_group_rhidden.age+0.8, 10), pmin = connectivity_born, pmax = connectivity_mature)
                 Wts_updated = Wts * ev.connections
                 Srs.w[:] = Wts_updated.flatten()
 

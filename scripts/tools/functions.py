@@ -342,17 +342,7 @@ def create_timepoints(Ids, init_delay, delay, T):
     sim_time = t_e
     return (timepoints, sim_time, time_points_dict)
 
-# function to generate variations of prototypes with a certain percentage of flipped bits
-def generate_prototype_variations(prototypes, n_sub, percent_variation):
-    '''function to generate variations of prototypes with a certain percentage of flipped bits. Is used to generate the finnegan data'''
-    n_prototypes, length = prototypes.shape
-    variations = np.zeros((n_prototypes*(n_sub), length))
-    original_prototypes = []
-    for i in range(n_prototypes):
-        for j in range(n_sub):
-            variations[i*n_sub+j] = np.abs(prototypes[i] - generate_pattern(length, percent_variation))
-            original_prototypes.append(i*10+j)
-    return variations, original_prototypes
+
 
 
 def average_activation_degree(x, y, percent = True):
@@ -431,6 +421,35 @@ def calculate_hamming_distance(x, y):
 def calculate_percent_match(a, b):
     return 1 - calculate_hamming_distance(a, b) / len(a)
 
+def percent_overlap(pattern1, pattern2):
+    return np.sum(pattern1*pattern2)/(len(pattern1) + len(pattern2))
+
+def shufle_percent(original, percent_variation):
+    # git indices of active bits
+    active_bits = np.where(original == 1)[0]
+    inactice_bits = np.where(original == 0)[0]
+    # number of bits to flip
+    n_flip = int(len(active_bits) * percent_variation)
+    # get random indices to flip
+    flip_indices = np.random.choice(active_bits, n_flip, replace=False)
+    flip_inactive_indices = np.random.choice(inactice_bits, n_flip, replace=False)
+    # flip bits
+    new_pattern = np.copy(original)
+    new_pattern[flip_indices] = 0
+    new_pattern[flip_inactive_indices] = 1
+    return new_pattern
+    
+def generate_prototype_variations(prototypes, n_sub, percent_variation):
+    '''function to generate variations of prototypes with a certain percentage of flipped bits. Is used to generate the finnegan data'''
+    n_prototypes, length = prototypes.shape
+    variations = np.zeros((n_prototypes*(n_sub), length))
+    original_prototypes = []
+    for i in range(n_prototypes):
+        for j in range(n_sub):
+            variations[i*n_sub+j] = shufle_percent(prototypes[i], percent_variation)
+            original_prototypes.append(i*10+j)
+    return variations, original_prototypes
+
 def generate_final_variations(prototype_variations, n_per_subclass, flip_second_round):
     prototypes, labels = prototype_variations
     n_prototypes, length = prototypes.shape
@@ -438,7 +457,7 @@ def generate_final_variations(prototype_variations, n_per_subclass, flip_second_
     original_prototypes = []
     for i in range(n_prototypes):
         for j in range(n_per_subclass):
-            variations[i, j] = np.abs(prototypes[i] - generate_pattern(length, flip_second_round))
+            variations[i, j] = shufle_percent(prototypes[i], flip_second_round)
             original_prototypes.append(labels[i])
     return variations, original_prototypes
 
@@ -463,7 +482,10 @@ def create_test_Id(test_data, off_time):
             Id = np.row_stack((Id, np.zeros((test_data.shape[1]))))
     return Id
 
-def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1, binarize = False, threshold = 10):
+def normalizer(x):
+    return x/np.max(np.abs(x))
+
+def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1, normalize = True, binarize = False, threshold = 10):
     hamming_distances = []
     percent_match_list = []
     originals = []
@@ -475,6 +497,9 @@ def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off
         t_stop_recover = time_points_dict["T"+ str(i+off_time)+"_e"]
         orig = spike_histogram(spike_monitor, t_start=t_start_stimulus, t_stop=t_stop_stimulus).T[1]
         recover = spike_histogram(spike_monitor, t_start=t_start_recover, t_stop=t_stop_recover).T[1]
+        if normalize:
+            orig = normalizer(orig)
+            recover = normalizer(recover)
         if binarize:
             orig = np.where(orig > threshold, 1, 0)
             recover = np.where(recover > threshold, 1, 0)
@@ -648,7 +673,8 @@ def update_connection_matrix(connections, probabilities, pmin = 0, pmax = 1):
             connections[idx,i] = 0
     return connections
 
-def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time_points_dict, binarize, threshold): 
+
+def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time_points_dict, normalize = True, binarize = False, threshold = 0.5): 
     vis = []
     hid = []
     for i in times:
@@ -656,6 +682,9 @@ def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time
         t_stop = time_points_dict["T"+ str(i)+"_e"]
         visible = spike_histogram(spike_monitor_visible, t_start=t_start, t_stop=t_stop).T[1]
         hiddden = spike_histogram(spike_monitor_hidden, t_start=t_start, t_stop=t_stop).T[1]
+        if normalize:
+            visible = normalizer(visible)
+            hiddden = normalizer(hiddden)
         if binarize:
             visible = np.where(visible > threshold, 1, 0)
             hiddden = np.where(hiddden > threshold, 1, 0)
@@ -663,14 +692,16 @@ def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time
         hid.append(hiddden)
     return vis, hid
 
-def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 60, binarize = True, order_of_model = 3, off_time = 1, 
+
+def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 0.5, normalize = True, binarize = False, order_of_model = 3, off_time = 1, 
                              plot_3rd_order = False, plot_error_bars = True, split = (0.5,1), ylimit = (0, 100), xlimit = (0, 20), 
-                             go_through_origin = False):
+                             go_through_origin = False, 
+                             colors = [[0.941, 0.62 , 0.137], [0.216, 0.639, 0.82], [0.875, 0.22 , 0.09], [0.322, 0.714, 0.345], [0.788, 0.373, 0.773]]):
     ''' Sorry for this horrible mess of a function. It is used to plot the input-output curves of the network.'''
     import matplotlib.colors as mcolors
     from matplotlib.lines import Line2D
 
-    if isinstance(threshold, int):
+    if isinstance(threshold, float):
         threshold = np.repeat(threshold, len(outputs))
 
     counter = 0
@@ -687,8 +718,8 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
         t_on = np.setdiff1d(np.arange(1, max(time_test_off_loaded)), time_test_off_loaded)
         time_points = t_on[int(len(t_on)*split[0]):int(len(t_on)*split[1])]
 
-        originals, recovered = get_hist_vis_hidden(Mv_loaded, Mh_loaded, time_points, time_points_dict, 
-                                                                                        binarize = binarize, threshold = threshold[counter])
+        originals, recovered = get_hist_vis_hidden(Mv_loaded, Mh_loaded, time_points, time_points_dict, normalize = normalize,
+                                                    binarize = binarize, threshold = threshold[counter])
         distances_in = np.zeros((len(originals), len(originals)))
         for i in range(len(originals)):
             for j in range(len(originals)):
@@ -713,10 +744,9 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
         all_out = np.concatenate(all_out)
 
 
-        #model_1 = np.poly1d(np.polyfit(all_in, all_out, order_of_model))
         model_2 = np.poly1d(np.polyfit(all_in, all_out, 1))
         polyline = np.linspace(-2, max(unique_dist_in)+1, 100)
-        col = list(mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]][:])
+        col = colors[counter][:3]
         col.append(alpha)
         if plot_error_bars:
             plt.errorbar(unique_dist_in+space, matched_dist_out_mean, matched_dist_out_std, linestyle='None', marker='.', linewidth=1,
@@ -732,8 +762,6 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
                     # Curve fitting function
                     return a * x**3 + b * x**2 + c * x  # d=0 is implied
 
-                """ plt.plot(polyline, model_1(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
-                        linestyle='-', linewidth=1) """
                 # Curve fitting
                 params = curve_fit(fit_func, all_in, all_out)
                 [a, b, c] = params[0]
@@ -751,16 +779,16 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
                 [a, b, c, d] = params[0]
                 x_fit = np.linspace(all_in[0], all_in[-1], 100)
                 y_fit = a * x_fit**3 + b * x_fit**2 + c * x_fit + d
-            plt.plot(x_fit, y_fit, label="_lalala", color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]])  # Fitted curve
+            plt.plot(x_fit, y_fit, label="_lalala", color = col[:3])  # Fitted curve
         else: 
-            plt.plot(polyline, model_2(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
+            plt.plot(polyline, model_2(polyline), color = col[:3], 
                 linestyle='--', linewidth=0.5)  
         
         plt.xlim(xlimit)
         plt.ylim(ylimit)
         plt.xlabel("Hamming distance between input patterns")
         plt.ylabel("Hamming distance between hidden patterns")
-        legend_elements.append(Line2D([0], [0], marker='o', color="w", label=model_identifyer[counter],  markerfacecolor=mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], markersize=5))
+        legend_elements.append(Line2D([0], [0], marker='o', color="w", label=model_identifyer[counter],  markerfacecolor=col[:3], markersize=5))
         counter += 1
         space += 0.5
     #plt.legend(model_identifyer[:len(outputs)])
@@ -769,3 +797,4 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
             linestyle='--', linewidth=1)
 
     plt.show()
+
