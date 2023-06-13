@@ -566,10 +566,10 @@ def pattern_separation_efficacy(input_1, input_2, output_1, output_2):
     pattern_distance_output = pattern_distance(orthogonalization_output, av_activ_output)
     return(pattern_distance_output/pattern_distance_input)
 
-def load_output(unique = "output", date = "", path = "output/"):
+def load_output(unique = "output", date = "", path = "output/", extension = ".pkl"):
     import pickle
     name = unique+date
-    with open(path+name+".pkl", 'rb') as handle:
+    with open(path+name+extension, 'rb') as handle:
         output = pickle.load(handle)
     return output
 
@@ -725,7 +725,7 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
         distances_in = np.zeros((len(originals), len(originals)))
         for i in range(len(originals)):
             for j in range(len(originals)):
-                distances_in[i,j] = calculate_hamming_distance(originals[i], originals[j])
+                distances_in[i,j] = calculate_hamming_distance(originals[i], originals[j])  
 
         distances_out = np.zeros((len(recovered), len(recovered)))
         for i in range(len(recovered)):

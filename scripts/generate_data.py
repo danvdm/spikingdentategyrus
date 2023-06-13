@@ -82,5 +82,5 @@ plt.show() """
 
 # save data to file
 save_data(final_variations, 
-          unique="data_uniform_variations_100_less_overlap", 
+          unique="uniform_variations_100_less_overlap", 
           path='scripts/data/')

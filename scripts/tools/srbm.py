@@ -193,7 +193,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                         Apost = Apost*exp((lastupdate-t)/tau_learn)
                         Apre += deltaA
                         I_rec_post += w * amp
-                        w = w + g * Apost + ((g+1)/2*-q_post + (-g+1)/2*p) * cost 
+                        w = w + g * Apost + ((g+1)/2*-q_post + (-g+1)/2*p) * cost * age_post
                         lastupdate = t
                         ''', 
                  on_post=''' 
@@ -201,7 +201,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                         Apost = Apost * exp((lastupdate-t)/tau_learn)
                         Apost += deltaA
                         I_rec_pre += w * amp
-                        w = w + g * Apre + ((g+1)/2*-q_post + (-g+1)/2*p) * cost 
+                        w = w + g * Apre + ((g+1)/2*-q_post + (-g+1)/2*p) * cost * age_post 
                         lastupdate = t
                         ''', 
                    method = method
