@@ -38,10 +38,10 @@ m = []
 while i < 10000 and matched == False:
 
     p1 = generate_pattern(stimulus_length, percent_on)
-    p2 = generate_overlapping_pattern(p1, 0.7)
-    p3 = generate_overlapping_pattern(p1, 0.6)
-    p4 = generate_overlapping_pattern(p1, 0.5)
-    p5 = generate_overlapping_pattern(p1, 0.4)
+    p2 = generate_overlapping_pattern(p1, 0.9)
+    p3 = generate_overlapping_pattern(p1, 0.5)
+    p4 = generate_overlapping_pattern(p1, 0.3)
+    p5 = generate_overlapping_pattern(p1, 0.01)
 
     percent_match = np.zeros((5, 5))
     percent_match[1, 0] = percent_overlap(p2, p1)
@@ -82,5 +82,5 @@ plt.show() """
 
 # save data to file
 save_data(final_variations, 
-          unique="data_uniform_variations_100", 
+          unique="data_uniform_variations_100_less_overlap", 
           path='scripts/data/')

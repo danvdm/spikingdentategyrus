@@ -662,6 +662,8 @@ def update_connection_matrix(connections, probabilities, pmin = 0, pmax = 1):
     # scale probabilities to be between pmin and pmax
     if np.min(probabilities) != np.max(probabilities):
         probabilities = (probabilities - np.min(probabilities))/(np.max(probabilities) - np.min(probabilities))*(pmax-pmin) + pmin
+    else:
+        probabilities = np.repeat(pmax, len(probabilities))
     for i in range(connections.shape[1]):
         n_active = np.sum(connections[:,i])
         missing = int(np.round(probabilities[i]*connections.shape[0])) - n_active

@@ -5,25 +5,50 @@ import matplotlib.pyplot as plt
 from tools.parameters import *
 
 def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, sparsity_cost = 0.5, dorun = True, 
-         monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False, generations = 1,
-         connectivity_born = 0.5, connectivity_mature = 0.5, lock_connectivity = False):
+         monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False, age_leak = False, 
+         threshold_ageing_degree = 1, age_threshold = False, set_connectivity = False, generations = 1,
+         connectivity_born = 0.5, connectivity_mature = 0.5, turnover = False, prop_born = 0.5, apt_wt_str = 0.2, apt_age = 0.15, 
+         apt_diff = 0.56, n_percent_aptosis = 0.05, neurogenesis = False,
+         gompertz = [0.8, 10]):
 
     start_scope()
-    b_init = np.concatenate([b_v, b_c, b_h])
+    #b_init = np.concatenate([b_v, b_c, b_h])
     netobjs = []
 
     ageing_factor = generations/(sim_time*(dcmt*t_ref)/4/second) # 4 is the working domain of the gompertz function (see initialisation of age_h)
     print('ageing factor: ', ageing_factor)
 
     if age_neurons:
-        age_h = np.random.uniform(-1, 3, N_h)
-        threshold_hidden = 'v>theta' #'v>((exp(-exp(-2*age)) + 0.0) * 2 * theta)'
-        connections_init = create_connection_matrix(N_input=N_v+N_c, N_hidden=N_h, probabilities=np.repeat(0.5, N_h), pmin = connectivity_born, pmax = connectivity_mature)
+        if neurogenesis:
+            age_h = np.concatenate((np.random.uniform(-1, 3, int(np.ceil(N_h * (1-prop_born)))), np.random.uniform(-4 * generations, -0.4 * generations, int(np.ceil(N_h*prop_born)))))
+        else: 
+            age_h = np.concatenate((np.random.uniform(-1, 3, int(np.ceil(N_h * (1-prop_born)))), np.repeat(-1000, int(np.ceil(N_h * prop_born)))))
+        np.random.shuffle(age_h)
+        if turnover:
+            threshold_age = 'age > 3 + (aptosis*1000)'
+        else:
+            threshold_age = 'age > 1000'
+            
+        if age_leak:
+            eqs_hidden = eqs_str_lif_wnr_age
+        else:
+            eqs_hidden = eqs_str_lif_wnr
+        if age_threshold:
+            threshold_hidden = 'v>(((age - 1) * ' + str(threshold_ageing_degree) + ' * volt) + theta * (((-sign(age - 0.01) + 1) / 2) * 100))'
+        else:
+            threshold_hidden = 'v> (theta * (((-sign(age - 0.01) + 1) / 2) * 100))'
+        if set_connectivity:
+            connections_init = create_connection_matrix(N_input=N_v+N_c, N_hidden=N_h, probabilities=np.repeat(0.5, N_h), pmin = connectivity_born, pmax = connectivity_mature)
+        else:
+            connections_init = 1
     else: 
         age_h = np.repeat(1, N_h) 
         threshold_hidden = 'v>theta'
         connections_init = 1 
+        eqs_hidden = eqs_str_lif_wnr
+        threshold_age = 'age > 1000'
 
+    
     
     
     #------------------------------------------ Neuron Groups
@@ -37,10 +62,11 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             method = method
             )
 
+
     neuron_group_rhidden = NeuronGroup(\
             N_h,
-            model = eqs_str_lif_wnr, # changed from eqs_h to eqs_str_lif_wnr
-            threshold =  'v>theta',       # threshold_hidden,  # removed *volt 
+            model = eqs_hidden, # changed from eqs_h to eqs_str_lif_wnr
+            threshold =  threshold_hidden,       # threshold_hidden,  # removed *volt 
             refractory = t_ref,
             reset = "v = 0*volt",    # changed to string
             method = method
@@ -50,7 +76,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                     dage/dt = age_factor/t_helper :1
                     t_helper : second
                     age_factor : 1
-                    helper_leak : 1'''
+                    helper_leak : 1
+                    aptosis : 1'''
 
     eqs_helper_av_act = '''
                         dq/dt = ((-helper_leak*q)/t_helper) :1
@@ -61,8 +88,8 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     neuron_group_rhidden_helper_age = NeuronGroup(\
             N_h,
             model = eqs_helper_age, 
-            threshold = 'age > 3',
-            reset = 'age = -1',
+            threshold = threshold_age,
+            reset = 'age = -2',
             ) 
     
     neuron_group_rhidden_helper_av_act = NeuronGroup(\
@@ -86,6 +113,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     neuron_group_rhidden_helper_age.t_helper = 1 * second
     neuron_group_rhidden_helper_age.helper_leak = leak_helper
     neuron_group_rhidden_helper_age.age = age_h
+    neuron_group_rhidden_helper_age.aptosis = np.repeat(1, N_h)
     neuron_group_rhidden_helper_age.age_factor = ageing_factor
     neuron_group_rhidden_helper_av_act.t_helper = 1 * second
     neuron_group_rhidden_helper_av_act.helper_leak = leak_helper
@@ -239,19 +267,35 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
 
     weights = []
     connections = []
+    av_wt_str = []
+    differentiat = []
+    check = []
 
     @network_operation(clock = ev)
     def g_update(when='after'):
         tmod, n = custom_step(ev, sim_time)            
 
         if age_neurons:
-            neuron_group_rhidden.age = neuron_group_rhidden_helper_age.age 
-            if not lock_connectivity:
+            neuron_group_rhidden.age = gomperz_function(neuron_group_rhidden_helper_age.age +gompertz[0], gompertz[1])
+            if set_connectivity:
                 Wts = np.full((N_v + N_c, N_h), np.nan)
                 Wts[Srs.i[:], Srs.j[:]] = Srs.w[:]
-                ev.connections = update_connection_matrix(ev.connections, probabilities=gomperz_function(neuron_group_rhidden.age+0.8, 10), pmin = connectivity_born, pmax = connectivity_mature)
-                Wts_updated = Wts * ev.connections
+                # aptosis
+                average_wt_strength = normalizer(abs(np.mean(Wts, axis= 0)))
+                differentiation = normalizer(np.std(Wts, axis= 0))
+                p_aptosis = (apt_wt_str * (average_wt_strength) + apt_diff * (differentiation) + apt_age * (1-neuron_group_rhidden.age)) / (apt_wt_str + apt_diff + apt_wt_str)
+                aptosis = 1-(p_aptosis <= p_aptosis[np.argsort(p_aptosis)[int(len(p_aptosis)*n_percent_aptosis)-1:int(len(p_aptosis)*n_percent_aptosis)][0]]) * 1
+                neuron_group_rhidden_helper_age.aptosis = aptosis
+                # weight update
+                old_connections = ev.connections.copy()
+                new_born_init = create_weight_matrix(N_v, N_h, N_c, sigma = 0.1) / beta_parameter
+                ev.connections = update_connection_matrix(ev.connections, probabilities=neuron_group_rhidden.age, pmin = connectivity_born, pmax = connectivity_mature)
+                
+                random_new = ((ev.connections-old_connections > 0) * ev.connections) * new_born_init
+                check.append(ev.connections-old_connections)
+                Wts_updated = Wts * ev.connections + random_new
                 Srs.w[:] = Wts_updated.flatten()
+
 
         neuron_group_rhidden.q = neuron_group_rhidden_helper_av_act.q / N_h
 
@@ -287,8 +331,11 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             Sbv.Apost=0
             Sbh.Apre=0
             Sbh.Apost=0
-            #weights.append(Wts_updated.flatten())
-            #connections.append(ev.connections.flatten())
+            if set_connectivity:
+                weights.append(Wts_updated.flatten())
+                connections.append(ev.connections.flatten())
+                av_wt_str.append(average_wt_strength)
+                differentiat.append(differentiation)
             #print(neuron_group_rhidden_helper_age.age)
         neuron_group_rvisible.age = age_v
 
