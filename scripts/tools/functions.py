@@ -699,7 +699,7 @@ def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time
     return vis_original, vis, hid
 
 
-def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 0.5, normalize = True, binarize = False, order_of_model = 3, off_time = 1, 
+def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 0.5, normalize = True, binarize = False, order_of_model = 3, 
                              plot_3rd_order = False, plot_error_bars = True, split = (0.5,1), ylimit = (0, 100), xlimit = (0, 20), 
                              go_through_origin = False, save_data = False, path = "final_data/", use_original_ids = False,
                              colors = [[0.941, 0.62 , 0.137], [0.216, 0.639, 0.82], [0.875, 0.22 , 0.09], [0.322, 0.714, 0.345], [0.788, 0.373, 0.773]]):
@@ -722,6 +722,7 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
         time_points_dict = output["time_points_dict"]
         Ids = output["Ids"]
         Ids_normalized = normalizer(Ids)
+        off_time = output["off_time"]
 
         time_test_off_loaded = output["time_test_off"]
         t_on = np.setdiff1d(np.arange(1, max(time_test_off_loaded)), time_test_off_loaded)
