@@ -3,10 +3,10 @@ import glob
 import pandas as pd
 
 # chose the conditions to combine the individual runs
-condition = "base"
+condition = "sparse_015_015_neurogenesis"
 
 # Path to the data
-path = "scripts/output_final.nosync/"
+path = "scripts/output.nosync/"
 
 list_condition = glob.glob(path + "*" + condition + ".pkl")
 print("Found " + str(len(list_condition)) + " matching files.")

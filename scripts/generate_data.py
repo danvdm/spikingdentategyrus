@@ -3,6 +3,8 @@ from tools.functions import *
 import matplotlib.pyplot as plt
 from tools.parameters import *
 
+save = False # save the data to file
+
 # parameters
 percent_on = 0.2                # percentage of bits that are flipped
 stimulus_length = 100      # length of the pattern
@@ -81,6 +83,8 @@ plt.show() """
 
 
 # save data to file
-save_data(final_variations, 
-          unique="uniform_variations_100_less_overlap", 
-          path='scripts/data/')
+
+if save:
+    save_data(final_variations, 
+            unique="uniform_variations_100_less_overlap", 
+            path='scripts/data/')

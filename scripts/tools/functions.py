@@ -820,3 +820,45 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
 
     plt.show()
     return distances_in, distances_out, original_ids, originals, recovered
+
+# Function to save the output of the SRBM simulation
+def save_output(unique = "", date = "", path = "output/"):
+    '''Saves the output of the SRBM simulation in a pickle file.'''
+    import pickle
+    k_v, v_v = zip(*Mv.spike_trains().items())
+    k_h, v_h = zip(*Mh.spike_trains().items())
+    output = {"Mv": {"i":np.array(Mv.i), "t":np.array(Mv.t), 
+                     "k": k_v, "v": v_v}, 
+              "Mh": {"i":np.array(Mh.i), "t":np.array(Mh.t), 
+                     "k": k_h, "v": v_h},
+              "time_test_on":time_test_on,
+              "time_test_off":time_test_off,
+              "Ids":Ids,
+              "timepoints":timepoints,
+              "t_sim":t_sim,
+              "time_points_dict":time_points_dict,
+              "W":W,
+              "b_v":b_v,
+              "b_c":b_c,
+              "b_h":b_h,
+              "mB":mB,
+              "Wvh":Wvh,
+              "Wch":Wch,
+              "mBv":mBv,
+              "mBh":mBh,
+              "sim_time":sim_time,
+              "N_v":N_v,
+              "N_c":N_c,
+              "N_h":N_h,
+              "beta_parameter":beta_parameter,
+              "tau_rec":tau_rec,
+              "dcmt":dcmt,
+              "off_time":off_time,
+              "n_seed_patterns": n_seed_patterns,
+              "n_prototype_per_seed": n_prototype_per_seed,
+              "n_variations_per_prototype": n_variations_per_prototype, 
+              "after_split_n_per_prototype_train": len(train_test_data[0][0]), 
+              "after_split_n_per_prototype_test": len(train_test_data[1][0])}                                 
+    with open(path+unique+date+'.pkl', 'wb') as handle: # Python 3:
+        pickle.dump(output, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    print("Output saved as output/"+unique+date+".pkl")
