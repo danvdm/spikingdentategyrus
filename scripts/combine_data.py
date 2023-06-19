@@ -3,6 +3,7 @@ import glob
 import pandas as pd
 
 # chose the conditions to combine the individual runs
+# if number is put in front of condition, only the specified file will be used
 condition = "sparse_015_015_neurogenesis"
 
 # Path to the data
