@@ -87,4 +87,4 @@ plt.show() """
 if save:
     save_data(final_variations, 
             unique="uniform_variations_100_less_overlap", 
-            path='scripts/data/')
+            path='scripts/training_data/')
