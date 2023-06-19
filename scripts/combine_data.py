@@ -3,13 +3,19 @@ import glob
 import pandas as pd
 
 # chose the conditions to combine the individual runs
-# if number is put in front of condition, only the specified file will be used
 condition = "sparse_015_015_neurogenesis"
 
 # Path to the data
 path = "scripts/output.nosync/"
 
 list_condition = glob.glob(path + "*" + condition + ".pkl")
+
+idx = []
+for i in range(len(list_condition)): 
+    if list_condition[i][len(path):].split("-")[1][:-4] == condition:
+        idx.append(i)
+list_condition = np.array(list_condition)[idx].copy()
+
 print("Found " + str(len(list_condition)) + " matching files.")
 
 print("Combining the data...")
@@ -60,7 +66,7 @@ for version in list_condition:
     off_time = output["off_time"] 
 
     len_phase = after_split_n_per_prototype_train * n_seed_patterns + after_split_n_per_prototype_test * n_seed_patterns 
-    idx_last_phase_plus_testing = len_phase * (n_variations_per_prototype - 1)
+    idx_last_phase_plus_testing = len_phase * (n_variations_per_prototype - 1) # -1 means that the the last phase is included in the evaluation. -2 would mean the last two phases are included in the evaluation
     last_phase_plus_testing = t_on[idx_last_phase_plus_testing:]
 
     inputs = Ids[last_phase_plus_testing]

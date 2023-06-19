@@ -10,11 +10,13 @@ path_to_data <- "scripts/final_data/"
 conditions <- c("base" 
                 ,"sparse_015"
                 ,"sparse_015_015_neurogenesis" 
+                ,"015_neurogenesis"
                 )
 
 legend_labels <- c("Base" 
                    ,"Sparse" 
-                   ,"+Neurogenesis"
+                   ,"Sparse Neurogenesis"
+                   ,"Neurogenesis"
                    )
 
 #dev.off()
@@ -41,7 +43,7 @@ colors <- c(rgb(0.93, 0.17, 0.17, opacity), #firebrick2
             rgb(0.93, 0.86, 0.51, opacity)) # lightgoldenrod2
 
 colors_legend <- c("firebrick2", "steelblue3", "darkolivegreen3", "lightgoldenrod2")
-pos_legend <- c(30, 15)
+pos_legend <- c(30, 20)
 
 #### PATTERN SEPARATION ####
 
