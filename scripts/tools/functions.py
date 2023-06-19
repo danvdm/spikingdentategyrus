@@ -676,32 +676,37 @@ def update_connection_matrix(connections, probabilities, pmin = 0, pmax = 1):
     return connections
 
 
-def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time_points_dict, normalize = True, binarize = False, threshold = 0.5): 
+def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time_points_dict, Ids, normalize = True, binarize = False, threshold = 0.5): 
     vis = []
     hid = []
+    vis_original = []
     for i in times:
         t_start = time_points_dict["T"+ str(i)+"_s"]
         t_stop = time_points_dict["T"+ str(i)+"_e"]
         visible = spike_histogram(spike_monitor_visible, t_start=t_start, t_stop=t_stop).T[1]
         hiddden = spike_histogram(spike_monitor_hidden, t_start=t_start, t_stop=t_stop).T[1]
+        Id = Ids[i]
         if normalize:
             visible = normalizer(visible)
             hiddden = normalizer(hiddden)
+            Id = normalizer(Id)
         if binarize:
             visible = np.where(visible > threshold, 1, 0)
             hiddden = np.where(hiddden > threshold, 1, 0)
         vis.append(visible)
         hid.append(hiddden)
-    return vis, hid
+        vis_original.append(Id)
+    return vis_original, vis, hid
 
 
 def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 0.5, normalize = True, binarize = False, order_of_model = 3, off_time = 1, 
                              plot_3rd_order = False, plot_error_bars = True, split = (0.5,1), ylimit = (0, 100), xlimit = (0, 20), 
-                             go_through_origin = False, 
+                             go_through_origin = False, save_data = False, path = "final_data/", use_original_ids = False,
                              colors = [[0.941, 0.62 , 0.137], [0.216, 0.639, 0.82], [0.875, 0.22 , 0.09], [0.322, 0.714, 0.345], [0.788, 0.373, 0.773]]):
     ''' Sorry for this horrible mess of a function. It is used to plot the input-output curves of the network.'''
     import matplotlib.colors as mcolors
     from matplotlib.lines import Line2D
+    import pandas as pd
 
     if isinstance(threshold, float):
         threshold = np.repeat(threshold, len(outputs))
@@ -715,13 +720,18 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
         Mh_loaded = output["Mh"]
         time_test_on = output["time_test_on"]
         time_points_dict = output["time_points_dict"]
+        Ids = output["Ids"]
+        Ids_normalized = normalizer(Ids)
 
         time_test_off_loaded = output["time_test_off"]
         t_on = np.setdiff1d(np.arange(1, max(time_test_off_loaded)), time_test_off_loaded)
         time_points = t_on[int(len(t_on)*split[0]):int(len(t_on)*split[1])]
 
-        originals, recovered = get_hist_vis_hidden(Mv_loaded, Mh_loaded, time_points, time_points_dict, normalize = normalize,
+        original_ids, originals, recovered = get_hist_vis_hidden(Mv_loaded, Mh_loaded, time_points, time_points_dict, Ids_normalized, normalize = normalize,
                                                     binarize = binarize, threshold = threshold[counter])
+        
+        if use_original_ids:
+            originals = original_ids
         distances_in = np.zeros((len(originals), len(originals)))
         for i in range(len(originals)):
             for j in range(len(originals)):
@@ -732,7 +742,11 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
             for j in range(len(recovered)):
                 distances_out[i,j] = calculate_hamming_distance(recovered[i], recovered[j])
         unique_dist_in = np.unique(distances_in)
-        matched_dist_out_mean = []
+        col = colors[counter][:3]
+        plt.plot(distances_in.flatten(), distances_out.flatten(), linestyle='None', marker='.', markersize=5,
+                        color = col)
+
+        """ matched_dist_out_mean = []
         matched_dist_out_std = []
         all_in = []
         all_out = []
@@ -754,7 +768,7 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
             plt.errorbar(unique_dist_in+space, matched_dist_out_mean, matched_dist_out_std, linestyle='None', marker='.', linewidth=1,
                         color = col)
         else:
-            plt.plot(unique_dist_in+space, matched_dist_out_mean, linestyle='None', marker='.', markersize=5,
+            plt.plot(unique_dist_in, matched_dist_out_mean, linestyle='None', marker='.', markersize=5,
                         color = col)
 
         if plot_3rd_order:
@@ -774,8 +788,6 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
                     # Curve fitting function
                     return a * x**3 + b * x**2 + c * x + d # d=0 is implied
 
-                """ plt.plot(polyline, model_1(polyline), color = mcolors.BASE_COLORS[list(mcolors.BASE_COLORS)[counter]], 
-                        linestyle='-', linewidth=1) """
                 # Curve fitting
                 params = curve_fit(fit_func, all_in, all_out)
                 [a, b, c, d] = params[0]
@@ -784,19 +796,26 @@ def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold =
             plt.plot(x_fit, y_fit, label="_lalala", color = col[:3])  # Fitted curve
         else: 
             plt.plot(polyline, model_2(polyline), color = col[:3], 
-                linestyle='--', linewidth=0.5)  
+                linestyle='--', linewidth=0.5)  """ 
         
         plt.xlim(xlimit)
         plt.ylim(ylimit)
         plt.xlabel("Hamming distance between input patterns")
         plt.ylabel("Hamming distance between hidden patterns")
         legend_elements.append(Line2D([0], [0], marker='o', color="w", label=model_identifyer[counter],  markerfacecolor=col[:3], markersize=5))
+        if save_data: 
+            pd.DataFrame(distances_in).to_csv(path + model_identifyer[counter]+"_distances_in.csv")
+            pd.DataFrame(distances_out).to_csv(path + model_identifyer[counter]+"_distances_out.csv")
+            
         counter += 1
         space += 0.5
+
+        
+
     #plt.legend(model_identifyer[:len(outputs)])
     plt.legend(handles=legend_elements)
     plt.plot(np.linspace(-2, max(ylimit)+1, 3), np.linspace(-2, max(ylimit)+1, 3), color='gray', 
             linestyle='--', linewidth=1)
 
     plt.show()
-
+    return distances_in, distances_out, original_ids, originals, recovered
