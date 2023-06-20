@@ -7,16 +7,16 @@ require(plotrix) # For CI plots
 
 path_to_data <- "scripts/final_data/"
 
-conditions <- c("base" 
-                ,"sparse_015"
-                ,"sparse_015_015_neurogenesis" 
-                ,"015_neurogenesis"
+conditions <- c("base",
+                "sparse_015",
+                "sparse_015_015_neurogenesis",
+                "sparse_015_015_neurogenesis_threshold"
                 )
 
-legend_labels <- c("Base" 
-                   ,"Sparse" 
-                   ,"Sparse Neurogenesis"
-                   ,"Neurogenesis"
+legend_labels <- c("Base",
+                   "Sparse",
+                   "+ Neurogenesis",
+                   "+ Neurogenesis + Threshold"
                    )
 
 #dev.off()

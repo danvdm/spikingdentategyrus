@@ -10,12 +10,12 @@ path_to_data <- "scripts/final_data/"
 conditions <- c("base", 
                 "sparse_015", 
                 "sparse_015_015_neurogenesis",
-                "015_neurogenesis")
+                "sparse_015_015_neurogenesis_threshold")
 
 legend_labels <- c("Base", 
                    "Sparse", 
-                   "Sparse Neurogenesis",
-                   "Neurogenesis")
+                   "+ Neurogenesis",
+                   "+ Neurogenesis + Threshold")
 
 # dev.off()
 # pdf("sparse_nosparse_threshold.pdf", width = 8, height = 6) # turn on to save plot
