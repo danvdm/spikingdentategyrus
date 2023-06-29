@@ -3,7 +3,7 @@ import glob
 import pandas as pd
 
 # chose the conditions to combine the individual runs
-condition = "sparse_015_015_neurogenesis_threshold"
+condition = "all_sparse_015_015_neurogenesis"
 
 # Path to the data
 path = "scripts/output.nosync/"

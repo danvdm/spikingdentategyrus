@@ -1,41 +1,180 @@
 ## Making some nice looking plots
 
 require(plotrix) # For CI plots
+library(reshape2)
+library(agricolae)
+
 
 rm(list = ls())
 setwd("/Users/daniel/Documents/Arbeit/Uni/Thesis/spikingdentategyrus/")
 
 path_to_data <- "scripts/final_data/"
+file_name <- "test_interference"
+save_file <- F
 
-conditions <- c("base", 
-                "sparse_015", 
+width <- 6
+height <- 5
+
+# file_name <- "base-sparse-neurogenesis-sparse_neurogenesis_interference"
+################ 
+# 
+# conditions <- c("Base",
+#                "015_neurogenesis",
+#                "sparse_015",
+#                "sparse_015_015_neurogenesis"
+# )
+# 
+# legend_labels <- c("Base",
+#                   "Neurogenesis",
+#                   "Sparse firing",
+#                   "Both"
+# )  
+################
+
+# file_name <- "base-sparse-sparse_neurogenesis_sparse_neurogenesis_full_connectivity_interference"
+################
+# conditions <- c("Base",
+#                 "sparse_015",
+#                 "sparse_015_015_neurogenesis_full_connectivity",
+#                 "sparse_015_015_neurogenesis"
+#                 )
+# 
+# legend_labels <- c("Base",
+#                    "Sparse firing",
+#                    "'' + Neurogenesis",
+#                    "'' + '' + Sparse connectivity"
+#                     )
+################
+
+
+#file_name <- "base-neurogenesis_neurogenesis-leak_neurogenesis-leak-turnover_interference"
+################
+
+# conditions <- c("Base",
+#                 "015_neurogenesis",
+#                 "015_neurogenesis_leak",
+#                 "015_neurogenesis_leak_turnover"
+# )
+# 
+# legend_labels <- c("Base",
+#                    "Neurogenesis",
+#                    "Neurogenesis + leak",
+#                    "Turnover"
+# )
+
+################
+
+# file_name <- "sparse-sparse_ng-sparse_ng_leak-sparse_ng_leak_turnover_interference"
+################
+
+conditions <- c("sparse_015",
+                #"all_sparse_015_015_neurogenesis", # added
                 "sparse_015_015_neurogenesis",
-                "sparse_015_015_neurogenesis_threshold")
+                "sparse_015_015_neurogenesis_leak",
+                "sparse_015_015_neurogenesis_leak_turnover"
+)
 
-legend_labels <- c("Base", 
-                   "Sparse", 
-                   "+ Neurogenesis",
-                   "+ Neurogenesis + Threshold")
+legend_labels <- c("sparse firing",
+                   "'' + sparse connectivity + neurogenesis",
+                   "'' + '' + '' + leak",
+                   "'' + '' + '' + '' + Turnover"
+)
+
+################
+
 
 # dev.off()
-# pdf("sparse_nosparse_threshold.pdf", width = 8, height = 6) # turn on to save plot
+if (save_file){
+  pdf(paste("plots/", file_name, ".pdf", sep = ""), width = width, height = height) # turn on to save plot
+}
 
 par(mfrow = c(1, 2))
-par(mgp=c(1.7,0.6,0), mar = c(5,3,3,1))
+par(mgp=c(2,0.6,0), mar = c(4,3.5,3,0.5))
 
 lw <- 2
-cex_axis <- 0.85
+cex_axis <- 1.3
 width_ci <- 0.008
 xlim <- c(0.5, 10.3)
-ylim <- c(0.8, 1)
+ylim <- c(0.84, 1)
 
-cex_main <- 1
-cex_lab <- 0.9
-  
+cex_main <- 1.2
+cex_lab <- 1.5
+cex_legend <- 0.8
+
 points <- c(1, 4, 5, 2)
-cex_points <- 1
+cex_points <- 1.2
 colors <- c("firebrick2", "steelblue3", "darkolivegreen3", "lightgoldenrod2")
 
+# data frame for all groups
+df_all_proactive <- data.frame(matrix(ncol = 4, nrow = 0))
+df_all_retroactive <- data.frame(matrix(ncol = 4, nrow = 0))
+
+# provide column names
+col_names <- c('id', 'condition', 'group', 'outcome')
+
+
+
+
+### PROACTIVE INTERFERENCE ###
+
+plot(NA, xlim = xlim, ylim = ylim, frame = F, 
+     axes = F, xlab = "Group", ylab = "Percent match", main = "Proactive Interference", 
+     cex.lab = cex_lab, cex.main = cex_main)
+axis(2, at = seq(0.75, 1, 0.05), lwd = lw, lend = 1, font = 3, 
+     cex.axis = cex_axis)
+axis(1, at = seq(1, 10, 1), lwd = lw, lend = 1, font = 3, cex.axis = cex_axis)
+
+
+counter <- 1
+space <- -0.2
+space_increment <- 0.2
+
+id_start <- 1
+
+for (condition in conditions){
+
+  path <- paste0(path_to_data, condition)
+  
+  df_percent_match_between <- t(read.csv(paste(path, "_pm_table_between.csv", sep = ""), header = TRUE)[-1])      # retroactive interference # nolint: line_length_linter.
+  
+  n_per_group <- nrow(df_percent_match_between)
+  n_groups <- ncol(df_percent_match_between)
+  molten <- melt(df_percent_match_between)
+  outcome <- molten[3]
+  condit <- rep(condition, n_groups * n_per_group)
+  group <- molten[2]
+  id <- rep(id_start:(id_start+n_per_group-1), n_groups)
+  id_start <- id_start+n_per_group
+  
+  new <- cbind(id, condit, group, outcome)
+  df_all_proactive <- rbind(df_all_proactive, new)
+  
+
+  means_between <- apply(df_percent_match_between, 2, mean)
+  sd_between <- apply(df_percent_match_between, 2, sd)
+  n_between <- nrow(df_percent_match_between)
+  
+  #calculate margin of error
+  margin_between  <- qt(0.975,df=n_between-1)*sd_between/sqrt(n_between)
+  
+  #calculate lower and upper bounds of confidence interval
+  low_between <- means_between - margin_between
+  
+  high_between <- means_between + margin_between 
+  
+  lines((1:10) + space, means_between, col = colors[counter], lty = 4, lend = 1, lw = lw/1.5)
+  points((1:10) + space, means_between, lw = lw, pch = points[counter], col = colors[counter], 
+         cex = cex_points, lend = 1)
+  plotCI((1:10) + space , means_between, ui=high_between, li=low_between, add = TRUE, lwd = lw/1.5, 
+         pch = NA, lend = 1, sfrac = width_ci)
+  
+  space <- space + space_increment
+  counter <- counter + 1
+}
+
+#legend("bottomleft", legend_labels, 
+#       col = colors, pch = points, lw = lw,
+#       bty = "n", bg = F, cex = cex_legend)
 
 
 #### RETROACTIVE INTERFERENCE ####
@@ -53,12 +192,26 @@ counter <- 1
 space <- -0.2
 space_increment <- 0.2
 
+id_start <- 1
+
 for (condition in conditions){
 
   path <- paste0(path_to_data, condition)
   
   df_percent_match_within <- t(read.csv(paste(path, "_pm_table_within.csv", sep = ""), header = TRUE)[-1])      # proactive interference # nolint: line_length_linter.
 
+  n_per_group <- nrow(df_percent_match_within)
+  n_groups <- ncol(df_percent_match_within)
+  molten <- melt(df_percent_match_within)
+  outcome <- molten[3]
+  condit <- rep(condition, n_groups * n_per_group)
+  group <- molten[2]
+  id <- rep(id_start:(id_start+n_per_group-1), n_groups)
+  id_start <- id_start+n_per_group
+  
+  new <- cbind(id, condit, group, outcome)
+  df_all_retroactive <- rbind(df_all_retroactive, new)
+  
   means_within <- apply(df_percent_match_within, 2, mean)
   sd_within <- apply(df_percent_match_within, 2, sd)
   n_within <- nrow(df_percent_match_within)
@@ -71,70 +224,65 @@ for (condition in conditions){
   
   high_within <- means_within + margin_within 
   
-  plotCI((1:10) + space , means_within, ui=high_within, li=low_within, add = TRUE, lwd = lw/1.5, 
-         pch = NA, lend = 1, sfrac = width_ci)
   lines((1:10) + space, means_within, col = colors[counter], lty = 4, lend = 1, lw = lw/1.5)
   points((1:10) + space, means_within, lw = lw, pch = points[counter], col = colors[counter], 
          cex = cex_points, lend = 1)
-  
-  space <- space + space_increment
-  counter <- counter + 1
-}
-
-legend("bottomleft", legend_labels, 
-       col = colors, pch = points, 
-       bty = "n", bg = F, cex = 0.8)
-
-
-### PROACTIVE INTERFERENCE ###
-
-plot(NA, xlim = xlim, ylim = ylim, frame = F, 
-     axes = F, xlab = "Group", ylab = "Percent match", main = "Proactive Interference", 
-     cex.lab = cex_lab, cex.main = cex_main)
-axis(2, at = seq(0.75, 1, 0.05), lwd = lw, lend = 1, font = 3, 
-     cex.axis = cex_axis)
-axis(1, at = seq(1, 10, 1), lwd = lw, lend = 1, font = 3, cex.axis = cex_axis)
-
-
-counter <- 1
-space <- -0.2
-space_increment <- 0.2
-
-for (condition in conditions){
-  
-  path <- paste0(path_to_data, condition)
-  
-  df_percent_match_between <- t(read.csv(paste(path, "_pm_table_between.csv", sep = ""), header = TRUE)[-1])      # retroactive interference # nolint: line_length_linter.
-  
-  means_between <- apply(df_percent_match_between, 2, mean)
-  sd_between <- apply(df_percent_match_between, 2, sd)
-  n_between <- nrow(df_percent_match_between)
-  
-  #calculate margin of error
-  margin_between  <- qt(0.975,df=n_between-1)*sd_between/sqrt(n_between)
-  
-  #calculate lower and upper bounds of confidence interval
-  low_between <- means_between - margin_between
-  
-  high_between <- means_between + margin_between 
-  
-  plotCI((1:10) + space , means_between, ui=high_between, li=low_between, add = TRUE, lwd = lw/1.5, 
+  plotCI((1:10) + space , means_within, ui=high_within, li=low_within, add = TRUE, lwd = lw/1.5, 
          pch = NA, lend = 1, sfrac = width_ci)
-  lines((1:10) + space, means_between, col = colors[counter], lty = 4, lend = 1, lw = lw/1.5)
-  points((1:10) + space, means_between, lw = lw, pch = points[counter], col = colors[counter], 
-         cex = lw/2, lend = 1)
   
   space <- space + space_increment
   counter <- counter + 1
 }
 
 legend("bottomleft", legend_labels, 
-       col = colors, pch = points, 
-       bty = "n", bg = F, cex = 0.8)
+       col = colors, pch = points, lw = lw,
+       bty = "n", bg = F, cex = cex_legend)
+
+if (save_file){
+  dev.off()
+}
+  
+# add columns names to df and turn grouping values into factors 
+
+colnames(df_all_proactive) <- col_names
+df_all_proactive["condition"] <- as.factor(as.matrix(df_all_proactive["condition"]))
+df_all_proactive["group"] <- as.factor(as.matrix(df_all_proactive["group"]))
+
+colnames(df_all_retroactive) <- col_names
+df_all_retroactive["condition"] <- as.factor(as.matrix(df_all_retroactive["condition"]))
+df_all_retroactive["group"] <- as.factor(as.matrix(df_all_retroactive["group"]))
 
 
-#dev.off()
+#### TWO-WAY REPEATED MEASURES ANOVA ####
 
+model_proactive <- aov(outcome ~ condition * group + Error(id/(condition*group)), data = df_all_proactive)
+summary(model_proactive)
+
+Edf <- df.residual(model_proactive$Within)
+Edf
+
+EMS <- deviance(model_proactive$Within)/Edf
+EMS
+
+
+SNK.test1 <- SNK.test(y = df_all_proactive["outcome"],
+                      trt = df_all_proactive["condition"],
+                      DFerror = Edf,
+                      MSerror = EMS,
+                      alpha = 0.05,
+                      group = TRUE)
+print(SNK.test1)
+
+model_retroactive <- aov(outcome ~ condition * group + Error(id/(condition*group)), data = df_all_retroactive)
+summary(model_retroactive)
+
+SNK.test1 <- SNK.test(y = df_all_retroactive["outcome"],
+                      trt = df_all_retroactive["condition"],
+                      DFerror = Edf,
+                      MSerror = EMS,
+                      alpha = 0.05,
+                      group = TRUE)
+print(SNK.test1)
 
 
 

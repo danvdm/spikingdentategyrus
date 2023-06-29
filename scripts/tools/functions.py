@@ -698,7 +698,7 @@ def get_hist_vis_hidden(spike_monitor_visible, spike_monitor_hidden, times, time
         vis_original.append(Id)
     return vis_original, vis, hid
 
-
+#not used anymore?
 def plot_input_output_curves(outputs, model_identifyer, alpha = 0.5, threshold = 0.5, normalize = True, binarize = False, order_of_model = 3, 
                              plot_3rd_order = False, plot_error_bars = True, split = (0.5,1), ylimit = (0, 100), xlimit = (0, 20), 
                              go_through_origin = False, save_data = False, path = "final_data/", use_original_ids = False,

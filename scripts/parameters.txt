@@ -1,0 +1,28 @@
+# SRBM main function
+# leak helper is sensistivity ov average
+print("Starting the SRBM simulation...")
+out = main(W, b_v, b_c, b_h, Id = Ids, sim_time = sim_time, t_sim = t_sim, dorun = True, n_classes = 5,
+           monitors = True, display=False, # set display to false if no lables are used 
+           # Ageing parameters:
+           p_target = 1e-10 , sparsity_cost = 0.15, # sparsity cost in learning equation. Multiply by 0 to turn off.
+           leak_helper = 10, # how reactive is the helper neuron that determines the average firing rate of the hidden neurons (for the sparsity cost)
+           age_neurons = True, # Should the network age in any way?
+           age_leak = False, # Should the leak conductance depend on the age of the neuron?
+           age_threshold= False, # Should the threshold depend on the age of the neuron?
+           threshold_ageing_degree = 1, # How much should the threshold depend on the age of the neuron?
+           set_connectivity = True, # Should the connectivity be controlled?
+           connectivity_born=0.01, connectivity_mature=0.05, # How connected are the neurons at the beginning and at the end of their life? If the same number is given, the connectivity is constant.
+           neurogenesis = True, # Should new neurons be born?
+           generations = 4, # How often are neurons reborn? Only matters if tunrover is True!
+           turnover=False, # Should neurons die?
+           prop_born= 0.15, # How many neurons are yet to be born thoughout the whole simulation? Only matters if turnover is True!
+           gompertz=[0, 1], # horizontal shift, growth rate
+           apt_wt_str = 0.25, apt_diff = 0.6, apt_age = 0.15, # weight of weight strength and differntiation and age on p_aptosis
+           n_percent_aptosis = 0.1, # percentage of neurons in aptosis ranking 
+           ) 
+locals().update(out)
+
+
+sparse_015 : sparsity constraint of 0.15
+015_neurogenesis : 15% neurogenesis with 1% initial connectivity and 5% final connectivity
+015_neurogenesis_full_connectivity : 15% neurogenesis with 5% initial connectivity and 5% final connectivity
