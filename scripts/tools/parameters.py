@@ -5,13 +5,13 @@ from tools.functions import *
 n_classes = 0                          # number of classes
 N_v = N_inputs = 100                     # number of input neurons
 N_c = N_class = 0                      # number of class neurons
-N_h = N_hidden = 10                     # number of hidden neurons
+N_h = N_hidden = 500                     # number of hidden neurons
 
 n_c_unit = 0 # N_c/n_classes               # number of class neurons per class
 
 # neuron equations:
 eqs_str_lif_wnrd = '''
-dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi + I_d)/Cm :volt
+dv/dt = (-g_leak*v + i_inj + I_rec + wnsigma*xi + I_d)/Cm :volt 
 dI_rec/dt = -I_rec/tau_rec : amp
 I_d : amp
 age : 1
@@ -24,13 +24,20 @@ age : 1
 '''
 
 eqs_str_lif_wnr_age = '''
-dv/dt = (-g_leak*v*(-0.5 * age + 2) + i_inj  + I_rec + wnsigma*xi)/Cm :volt
+dv/dt = (-g_leak*v*(-age * 0.5 + 1.5) + i_inj  + I_rec + wnsigma*xi)/Cm :volt 
 dI_rec/dt = -I_rec/tau_rec : amp
 q : 1
 age : 1
 '''
 
-# ((-age+2)/2+1) should be replacable by -0.5 * age + 2
+""" eqs_str_lif_wnr_age = '''
+dv/dt = (-g_leak*v + i_inj  + I_rec + wnsigma*xi)/Cm :volt
+dI_rec/dt = -I_rec/tau_rec : amp
+q : 1
+age : 1
+''' """
+
+# ((-age+2)/2+1) should be replacable by 0.5 * -age + 2
 # (-0.5 * age + 2) used to be ((-age+2)/2+1) !!! 
 
 dcmt = 30                              # duration of cycle
@@ -48,7 +55,7 @@ age_h = np.random.uniform(-(generations+1), 1, N_h)
 method = "euler"          # integration method for differential equations
 
 #----------------------------------------- Neuron parameters
-t_ref = 0.004 * second                  # refractory period 
+t_ref = 0.004 * second                 # refractory period 
 #t_sim = dcmt*t_ref*sim_time                  # simulation time - originally 10000
 bias_input_rate = 1000. * Hz            # Mean firing rate of bias Poisson spike train
 beta_parameter = 2.04371561e+09 # * 1/amp 
@@ -63,7 +70,7 @@ cal_i_lk = 0.0e-10                      # leak current
 g_leak = 1e-9 * siemens                 # leak conductance
 #dt = 0.00005 * second                 # time step --> Not necessary anymore ?!?!?!
 # n_samples = ceil(t_sim/(dcmt*t_ref)+1)  # number of samples
-wnsigma = 4.24e-11 * amp / second**-0.5 # This the reason why its slow. old: 4.24e-11
+wnsigma = 4.24e-11 * amp / second**-0.5 
 
 t_burn_percent = 10.                    # percentage of burn-in time
 tau_learn = t_ref                       

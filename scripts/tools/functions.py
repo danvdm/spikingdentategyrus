@@ -416,10 +416,19 @@ def create_Id_pattern(n, data, N_v, N_c, n_c_unit, beta_parameter, on_off_ratio,
     return (np.column_stack(Ids).T, labels_out)
 
 def calculate_hamming_distance(x, y):
-    return np.sum(np.abs(x-y))
+    return np.linalg.norm(x-y, ord=1)
+
+def calculate_eucledian_distance(x, y):
+    return np.linalg.norm(x-y, ord=2)
 
 def calculate_percent_match(a, b):
     return 1 - calculate_hamming_distance(a, b) / len(a)
+
+def calculate_percent_match_cs(a, b):
+    return cosine_similarity(a, b)
+
+def calculate_percent_match_ed(a, b):
+    return calculate_percent_match_cs(a, b)
 
 def percent_overlap(pattern1, pattern2):
     return np.sum(pattern1*pattern2)/(len(pattern1) + len(pattern2))
@@ -487,7 +496,9 @@ def normalizer(x):
 
 def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off_time=1, normalize = True, binarize = False, threshold = 10):
     hamming_distances = []
+    euclidean_distances = []
     percent_match_list = []
+    percent_match_list_ed = []
     originals = []
     recovereds = []
     for i in test_show_times:
@@ -504,10 +515,12 @@ def hamming_distances_test(spike_monitor, test_show_times, time_points_dict, off
             orig = np.where(orig > threshold, 1, 0)
             recover = np.where(recover > threshold, 1, 0)
         hamming_distances.append(calculate_hamming_distance(orig, recover))
+        euclidean_distances.append(calculate_eucledian_distance(orig, recover))
         percent_match_list.append(calculate_percent_match(orig, recover))
+        percent_match_list_ed.append(calculate_percent_match_ed(orig, recover))
         originals.append(orig)
         recovereds.append(recover)
-    return hamming_distances, percent_match_list, originals, recovereds
+    return hamming_distances, percent_match_list, originals, recovereds, euclidean_distances, percent_match_list_ed
 
 def create_finnegan_Ids(train_test_data_finnegan, off_time = 1, n_per_prototype = 10, n_main_classes = 5):
     # n_per_prototype is the value that should not be above 10 in the parameters file

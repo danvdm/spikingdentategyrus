@@ -79,7 +79,7 @@ prototypes = np.array([p1, p2, p3, p4, p5])
 prototype_variations = generate_prototype_variations(prototypes, n_prototype_per_seed, flip_first_round)
 final_variations = generate_final_variations(prototype_variations, n_variations_per_prototype, flip_second_round)
 
-""" imshow(np.row_stack([prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0],
+imshow(np.row_stack([prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0], prototypes[0],
                      prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], prototypes[1], 
                      prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], prototypes[2], 
                      prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3], prototypes[3],
@@ -87,7 +87,7 @@ final_variations = generate_final_variations(prototype_variations, n_variations_
                      cmap='gray')
 plt.show()
 imshow(prototype_variations[0], cmap='gray')
-plt.show() """
+plt.show()
 
 
 # save data to file

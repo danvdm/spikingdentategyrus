@@ -8,7 +8,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
          monitors=True, mnist_data = None, display = True, n_classes = 10, age_neurons = False, age_leak = False, 
          threshold_ageing_degree = 1, age_threshold = False, set_connectivity = False, generations = 1,
          connectivity_born = 0.5, connectivity_mature = 0.5, turnover = False, prop_born = 0.5, apt_wt_str = 0.2, apt_age = 0.15, 
-         apt_diff = 0.56, n_percent_aptosis = 0.05, neurogenesis = False,
+         apt_diff = 0.56, n_percent_apoptosis = 0.05, neurogenesis = False,
          gompertz = [0.8, 10]):
 
     start_scope()
@@ -25,7 +25,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             age_h = np.concatenate((np.random.uniform(-1, 3, int(np.ceil(N_h * (1-prop_born)))), np.repeat(-1000, int(np.ceil(N_h * prop_born)))))
         np.random.shuffle(age_h)
         if turnover:
-            threshold_age = 'age > 3 + (aptosis*1000)'
+            threshold_age = 'age > 3 + (apoptosis*1000)'
         else:
             threshold_age = 'age > 1000'
             
@@ -77,7 +77,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
                     t_helper : second
                     age_factor : 1
                     helper_leak : 1
-                    aptosis : 1'''
+                    apoptosis : 1'''
 
     eqs_helper_av_act = '''
                         dq/dt = ((-helper_leak*q)/t_helper) :1
@@ -113,7 +113,7 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
     neuron_group_rhidden_helper_age.t_helper = 1 * second
     neuron_group_rhidden_helper_age.helper_leak = leak_helper
     neuron_group_rhidden_helper_age.age = age_h
-    neuron_group_rhidden_helper_age.aptosis = np.repeat(1, N_h)
+    neuron_group_rhidden_helper_age.apoptosis = np.repeat(1, N_h)
     neuron_group_rhidden_helper_age.age_factor = ageing_factor
     neuron_group_rhidden_helper_av_act.t_helper = 1 * second
     neuron_group_rhidden_helper_av_act.helper_leak = leak_helper
@@ -283,12 +283,12 @@ def main(Whv, b_v, b_c, b_h, Id, t_sim, sim_time, leak_helper, p_target = 0.05, 
             if set_connectivity:
                 Wts = np.full((N_v + N_c, N_h), np.nan)
                 Wts[Srs.i[:], Srs.j[:]] = Srs.w[:]
-                # aptosis
+                # apoptosis
                 average_wt_strength = normalizer(abs(np.mean(Wts, axis= 0)))
                 differentiation = normalizer(np.std(Wts, axis= 0))
-                p_aptosis = (apt_wt_str * (average_wt_strength) + apt_diff * (differentiation) + apt_age * (1-neuron_group_rhidden.age)) / (apt_wt_str + apt_diff + apt_wt_str)
-                aptosis = 1-(p_aptosis <= p_aptosis[np.argsort(p_aptosis)[int(len(p_aptosis)*n_percent_aptosis)-1:int(len(p_aptosis)*n_percent_aptosis)][0]]) * 1
-                neuron_group_rhidden_helper_age.aptosis = aptosis
+                p_apoptosis = (apt_wt_str * (average_wt_strength) + apt_diff * (differentiation) + apt_age * (1-neuron_group_rhidden.age)) / (apt_wt_str + apt_diff + apt_wt_str)
+                apoptosis = 1-(p_apoptosis <= p_apoptosis[np.argsort(p_apoptosis)[int(len(p_apoptosis)*n_percent_apoptosis)-1:int(len(p_apoptosis)*n_percent_apoptosis)][0]]) * 1
+                neuron_group_rhidden_helper_age.apoptosis = apoptosis
                 # weight update
                 old_connections = ev.connections.copy()
                 new_born_init = create_weight_matrix(N_v, N_h, N_c, sigma = 0.1) / beta_parameter
