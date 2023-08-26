@@ -9,7 +9,7 @@ path_to_data <- "scripts/final_data/"
 file_name <- "test_separation"
 
 # plot is only shown if save_file == F
-save_file <- F
+save_file <- T
 
 Base <- "#EE4000" 
 
@@ -25,14 +25,14 @@ all_sparse_neurogenesis <- "#CDB5CD"
 sparse_neurogenesis <- "#00E5EE"
 sparse_neurogenesis_turnover <- "#1E90FF"
 sparse_neurogenesis_leak <- "#8B8989"
-sparse_neurogenesis_leak_turnover <- "yellow1"
+sparse_neurogenesis_leak_turnover <- "yellow3"
 
 figure <- 4
 
 if (figure == 1){
   file_name <- "no_sparse_separation"
   
-  conditions <- c("Base",
+  conditions <- c("base",
                   "015_neurogenesis",
                   "015_neurogenesis_leak_adj",
                   "015_neurogenesis_turnover"
@@ -52,7 +52,7 @@ if (figure == 1){
 if (figure == 2){
   file_name <- "base_sparse_separation"
   
-  conditions <- c("Base",
+  conditions <- c("base",
                   "sparse_015",
                   "sparse_015_015_neurogenesis"
   )
@@ -69,6 +69,7 @@ if (figure == 2){
 
 if (figure == 3){
   file_name <- "sparse_firing_connectivity_separation"
+  
   conditions <- c("sparse_015_015_neurogenesis",
                   "sparse_015_015_neurogenesis_full_connectivity",
                   "all_sparse_015_015_neurogenesis"
@@ -89,20 +90,18 @@ if (figure == 3){
 if (figure == 4){
   file_name <- "sparse_turnover_leak_separation"
   
-  conditions <- c("Base",
-                  "sparse_015_015_neurogenesis",
+  conditions <- c("sparse_015_015_neurogenesis",
                   "sparse_015_015_neurogenesis_leak_adj",
                   "sparse_015_015_neurogenesis_turnover", 
                   "sparse_015_015_neurogenesis_leak_adj_turnover"
   )
   
-  legend_labels <- c("base",
-                     "neurogenesis (mGCs sparse firing)",
+  legend_labels <- c("neurogenesis (mGCs sparse firing)",
                      "ng (mGCs sp. fir.) + hp.-exc. imGCs",
                      "ng (mGCs sp. fir.) + apoptosis", 
                      "all"
   )
-  colors <- c(Base, sparse_neurogenesis, sparse_neurogenesis_leak, sparse_neurogenesis_turnover, sparse_neurogenesis_leak_turnover)
+  colors <- c(sparse_neurogenesis, sparse_neurogenesis_leak, sparse_neurogenesis_turnover, sparse_neurogenesis_leak_turnover)
 }
 
 ################
@@ -119,9 +118,9 @@ confidence_intervals <- T
 
 lw <- 2
 cex_axis <- 1.3
-width_ci <- 0.01
-xlim <- c(0, 10)
-ylim <- c(0, 5)
+width_ci <- 0.013
+xlim <- c(0, 8)
+ylim <- c(0, 8)
 
 cex_main <- 1.2
 cex_lab <- 1.2
@@ -148,8 +147,8 @@ axis(1, at = seq(0, xlim[2]+1, 2), lwd = lw, lend = 1, font = 3,
      cex.axis = cex_axis)
 
 counter <- 1
-space <- -0.2
-space_increment <- 0.2
+space <- -0.1
+space_increment <- 0.05
 
 for (condition in conditions){
   
@@ -170,20 +169,21 @@ for (condition in conditions){
   high <- mean_y + margin 
   
   if (confidence_intervals){
-    plotCI(df_x , mean_y, ui=high, li=low, add = TRUE, lwd = lw/1.5, 
+    plotCI(df_x + space, mean_y, ui=high, li=low, add = TRUE, lwd = lw/1.5, 
            pch = NA, lend = 1, sfrac = width_ci)
   }
-  segments(9, mean(mean_y[2:length(mean_y)]), 10, mean(mean_y[2:length(mean_y)]), col = colors[counter], lty = 1, lw = lw*3, lend = 1)
-  segments(0, mean(mean_y[2:length(mean_y)]), 10, mean(mean_y[2:length(mean_y)]), col = colors[counter], lty = 3, lw = lw/2, lend = 1)
-  points(df_x, mean_y, lw = lw, pch = points[counter], col = colors[counter],
+  segments(7, mean(mean_y[2:length(mean_y)]), 8, mean(mean_y[2:length(mean_y)]), col = colors[counter], lty = 1, lw = lw*3, lend = 1)
+  segments(0, mean(mean_y[2:length(mean_y)]), 8, mean(mean_y[2:length(mean_y)]), col = colors[counter], lty = 3, lw = lw/2, lend = 1)
+  points(df_x + space, mean_y, lw = lw, pch = points[counter], col = colors[counter],
          cex = cex_points, lend = 1, bg = colors[counter])
   #(mean_y, add = T, boxwex=10, col = colors[counter], axes = F)
   # lines(df_x, mean_y, lw = lw, pch = points[counter], col = colors[counter], 
   #       cex = cex_points, lend = 1)
   counter <- counter + 1
+  space <- space + space_increment
 }
 #abline(0, 1, col = "black", lty = 3, lw = lw/2, lend = 1)
-segments(0, 0, 80, 80, col = "black", lty = 3, lw = lw/2, lend = 1)
+#segments(0, 0, 80, 80, col = "black", lty = 3, lw = lw/2, lend = 1)
 legend("bottomright", 
        #pos_legend[1], pos_legend[2], 
        legend_labels, 

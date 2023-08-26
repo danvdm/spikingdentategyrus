@@ -34,7 +34,7 @@ sparse_neurogenesis_leak_turnover <- "yellow3"
 
 
 
-figure <- 2
+figure <- 4
 
 ################
 #figure 3 in final text

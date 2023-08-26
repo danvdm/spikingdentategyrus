@@ -27,7 +27,7 @@ sparse_neurogenesis_turnover <- "#1E90FF"
 sparse_neurogenesis_leak <- "#8B8989"
 sparse_neurogenesis_leak_turnover <- "yellow1"
 
-figure <- 4
+figure <- 2
 
 if (figure == 1){
   file_name <- "no_sparse_separation"
